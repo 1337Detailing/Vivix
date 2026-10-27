@@ -2435,23 +2435,28 @@ public class Main extends Activity {
         sb.append("SRC=").append(getExternalFilesDir(null).getAbsolutePath()).append("/icons;");
         sb.append("TD=/data/bbkcore/theme;");
         sb.append("LOCK=$TD/.icons_gctune_lock;");
-        // Stale locks must die: the lock is a directory and the old "find
-        // -mmin -delete" probe is not supported by every toybox build, which
-        // left "previous installation is still running" hanging forever. Age is checked
-        // with stat/date (both always available), stale (>3 min) is removed.
-        sb.append("if ! mkdir $LOCK 2>/dev/null; then ");
-        sb.append("ts=$(stat -c %Y $LOCK 2>/dev/null); now=$(date +%s); ");
-        sb.append("if [ -n \"$ts\" ] && [ $((now-ts)) -gt 180 ]; then ");
-        sb.append("rm -rf $LOCK 2>/dev/null; mkdir $LOCK 2>/dev/null || { echo BUSY; exit 0; }; ");
-        sb.append("else echo BUSY; exit 0; fi; fi;");
-        sb.append("trap 'rmdir $LOCK 2>/dev/null' EXIT;");
+        // Use an atomic mkdir to guard against simultaneous icon installs.
+        // A previous command may have been interrupted before its EXIT trap
+        // released the directory, so report the lock age and safely recover
+        // only old, empty locks. Never recursively delete the lock.
+        sb.append("if ! mkdir \"$LOCK\" 2>/dev/null; then ");
+        sb.append("ts=$(stat -c %Y \"$LOCK\" 2>/dev/null); now=$(date +%s); age=-1;");
+        sb.append("if [ -n \"$ts\" ] && [ \"$ts\" -gt 0 ] 2>/dev/null && [ \"$now\" -ge \"$ts\" ] 2>/dev/null; then age=$((now-ts)); fi;");
+        sb.append("if [ \"$age\" -ge 180 ]; then ");
+        sb.append("rmdir \"$LOCK\" 2>/dev/null || { echo STALE_LOCK_NOT_EMPTY; echo BUSY_LOCK_AGE=$age; echo BUSY; exit 0; };");
+        sb.append("mkdir \"$LOCK\" 2>/dev/null || { echo LOCK_RACE; echo BUSY; exit 0; };");
+        sb.append("echo STALE_LOCK_RECOVERED=$age;");
+        sb.append("else echo BUSY_LOCK_AGE=$age; echo BUSY; exit 0; fi; fi;");
+        // Explicitly unlock on the normal path as well as in the EXIT trap.
+        // Some Game Cube shell execution paths may not run an EXIT trap.
+        sb.append("trap 'rmdir \"$LOCK\" 2>/dev/null' EXIT;");
         // icons are rendered by the app into $SRC before this command runs.
         sb.append("echo SRC_ICONS=$(ls \"$SRC\" 2>/dev/null | wc -l);");
         // 1) stage the new icons first so nothing is half-swapped if we bail out
         sb.append("NEW=$TD/.icons_gctune_new;");
         sb.append("rm -rf $NEW 2>/dev/null; mkdir -p $NEW;");
         sb.append("for f in \"$SRC\"/*.png; do [ -f \"$f\" ] && cp \"$f\" $NEW/ 2>/dev/null; done;");
-        sb.append("[ -n \"$(ls -A $NEW)\" ] || { echo NO_ICONS; rm -rf $NEW; exit 0; };");
+        sb.append("[ -n \"$(ls -A $NEW)\" ] || { echo NO_ICONS; rm -rf $NEW; rmdir \"$LOCK\" 2>/dev/null; exit 0; };");
         // 2) ensure the launcher template exists (icon_bg / icon_mask / icon_border)
         sb.append("if [ ! -d $TD/launcher ]; then ");
         sb.append("mkdir -p $TD; ");
@@ -2514,6 +2519,8 @@ public class Main extends Activity {
         sb.append("am force-stop com.bbk.launcher2;");
         sb.append("am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1;");
         sb.append("sleep 2;");
+        // Release immediately, before the enclosing Game Cube shell returns.
+        sb.append("rmdir \"$LOCK\" 2>/dev/null || echo LOCK_RELEASE_FAILED;");
         sb.append("echo APPLIED_ICONS=$N;");
         sb.append("echo APPLIED;");
         return sb.toString();
@@ -2542,7 +2549,26 @@ public class Main extends Activity {
         } else if (out.contains("NO_ICONS")) {
             iconsStatus("No recolored icons — try again", Ui.ERROR);
         } else if (out.contains("BUSY")) {
-            iconsStatus("Previous installation still running — wait and retry", Ui.ERROR);
+            // A lock may have been left by a terminated installation.
+            // Report the observed age rather than assuming a command runs.
+            String age = "";
+            int pos = out.indexOf("BUSY_LOCK_AGE=");
+            if (pos >= 0) {
+                int startAge = pos + "BUSY_LOCK_AGE=".length();
+                int stopAge = startAge;
+                while (stopAge < out.length() && (Character.isDigit(out.charAt(stopAge))
+                        || out.charAt(stopAge) == '-')) stopAge++;
+                if (stopAge > startAge) age = out.substring(startAge, stopAge);
+            }
+            if (out.contains("STALE_LOCK_NOT_EMPTY")) {
+                iconsStatus("Old icon-install lock is not empty. Stop retrying and inspect the lock in Shell.", Ui.ERROR);
+            } else if (out.contains("LOCK_RACE")) {
+                iconsStatus("Another icon installation took the lock. Retry after it finishes.", Ui.ERROR);
+            } else if (!age.isEmpty() && !age.equals("-1")) {
+                iconsStatus("Icon installer locked (" + age + " s). No new installation started. Retry after 3 minutes.", Ui.ERROR);
+            } else {
+                iconsStatus("Icon installer is locked (age unavailable). Inspect the lock in Shell.", Ui.ERROR);
+            }
         } else if (out.contains("APPLIED")) {
             String n = "";
             int i = out.indexOf("APPLIED_ICONS=");
