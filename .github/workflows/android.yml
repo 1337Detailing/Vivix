@@ -3,7 +3,6 @@ name: Android debug APK
 on:
   push:
     branches: [main, feat/english-gc-tune]
-  pull_request:
   workflow_dispatch:
 
 permissions:

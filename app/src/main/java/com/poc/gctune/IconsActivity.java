@@ -1,7 +1,7 @@
 package com.poc.gctune;
 
 /**
- * Standalone «Иконки» page, opened from the Кастомизация hub.
+ * Standalone “Icons” page, opened from the Customization hub.
  * Inherits all page logic from Main; sectionPage() selects the built page.
  */
 public class IconsActivity extends Main {

@@ -1,7 +1,7 @@
 package com.poc.gctune;
 
 /**
- * Standalone «Шрифты» page, opened from the Кастомизация hub.
+ * Standalone “Fonts” page, opened from the Customization hub.
  * Inherits all page logic from Main; sectionPage() selects the built page.
  */
 public class FontActivity extends Main {
