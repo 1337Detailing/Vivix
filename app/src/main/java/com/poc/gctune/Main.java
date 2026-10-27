@@ -274,6 +274,7 @@ public class Main extends Activity {
     private String pendingOldStyle = null;
     private boolean styleToggleOk = true;
     private boolean iconsRun = false;
+    private boolean iconsDiagnosticRun = false;
     private List<String> iconsPackages = new ArrayList<>();
     private List<Drawable> iconsOriginals = new ArrayList<>();
     private List<Drawable> iconsTinted = new ArrayList<>();
@@ -1921,6 +1922,14 @@ public class Main extends Activity {
         applyLp.bottomMargin = Ui.dp(this, 14);
         root.addView(apply, applyLp);
 
+        View diagnostics = textButton("Diagnose OriginOS icons (read-only)",
+                new View.OnClickListener() {
+                    @Override public void onClick(View v) { runIconsDiagnostics(); }
+                });
+        LinearLayout.LayoutParams diagnosticLp = new LinearLayout.LayoutParams(-1, -2);
+        diagnosticLp.bottomMargin = Ui.dp(this, 14);
+        root.addView(diagnostics, diagnosticLp);
+
         // ---- status card
         LinearLayout statusCard = Ui.col(this);
         statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 12f, Ui.BORDER, 1.2f));
@@ -2212,6 +2221,66 @@ public class Main extends Activity {
         } catch (Throwable t) {
             Log.e("GCTune", "loadLauncherApps failed: " + t);
         }
+    }
+
+    /** Read-only inspection of the real icon paths and settings on this device. */
+    private String iconsDiagnosticsCommand() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("echo VIVIX_ICON_DIAGNOSTICS;");
+        sb.append("id;");
+        sb.append("echo SYSTEM_STYLE_SETTINGS;");
+        sb.append("for k in theme_icons_style_explore theme_icons_style_explore_new theme_style pref_replace_icon; do echo $k=$(settings get system $k 2>/dev/null); done;");
+        sb.append("echo GLOBAL_STYLE_SETTINGS;");
+        sb.append("echo theme_icons_style_explore=$(settings get global theme_icons_style_explore 2>/dev/null);");
+        sb.append("echo ICON_THEME_ROOTS;");
+        sb.append("for d in /data/bbkcore/theme/icons /data/bbkcore/theme/0/icons /data/bbkcore/theme/vivo/icons /data/bbkcore/theme/launcher /data/bbkcore/theme/0/launcher /system/etc/theme/icons; do ");
+        sb.append("if [ -d \"$d\" ]; then echo FOUND=$d; ls -ld \"$d\"; echo CONTENT_COUNT=$(ls -1 \"$d\" 2>/dev/null | wc -l); else echo MISSING=$d; fi; done;");
+        sb.append("echo THEME_ROOT;");
+        sb.append("ls -ld /data/bbkcore/theme /data/bbkcore/theme/vivo /data/bbkcore/theme/0 2>/dev/null;");
+        sb.append("echo SAMPLE_INSTALLED_ICON_NAMES;");
+        sb.append("ls -1 /data/bbkcore/theme/icons 2>/dev/null | head -n 8;");
+        sb.append("echo LAUNCHER_PACKAGE;");
+        sb.append("pm path com.bbk.launcher2 | head -n 2;");
+        sb.append("echo END_DIAGNOSTICS;");
+        return sb.toString();
+    }
+
+    private void runIconsDiagnostics() {
+        if (busy) {
+            iconsStatus("Another command is still running.", Ui.ERROR);
+            return;
+        }
+        iconsDiagnosticRun = true;
+        iconsStatus("Reading icon settings and theme paths (no changes)…", Ui.ACCENT);
+        if (!apply(iconsDiagnosticsCommand())) {
+            iconsDiagnosticRun = false;
+            iconsStatus("Cannot start diagnostics. Check the Game Cube connection.", Ui.ERROR);
+        }
+    }
+
+    private void iconsDiagnosticsResult(boolean ok, Entry entry) {
+        iconsDiagnosticRun = false;
+        final String report = ok && entry != null && entry.out != null ? entry.out : "";
+        if (!report.contains("END_DIAGNOSTICS")) {
+            iconsStatus("Incomplete diagnostic: no response from Game Cube.", Ui.ERROR);
+            return;
+        }
+        iconsStatus("Report ready: copy and share it for analysis.", Ui.ACCENT);
+        new AlertDialog.Builder(this)
+                .setTitle("OriginOS icon diagnostics")
+                .setMessage(report)
+                .setPositiveButton("Copy report", new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        android.content.ClipboardManager clipboard =
+                                (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                        if (clipboard != null) {
+                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Vivix icon diagnostic", report));
+                            toast("Diagnostic copied");
+                        }
+                    }
+                })
+                .setNegativeButton("Close", null)
+                .show();
     }
 
     private void runIconsApply() {
@@ -4465,6 +4534,7 @@ public class Main extends Activity {
             e.out = null;
         }
         busy = false;
+        if (iconsDiagnosticRun) { iconsDiagnosticRun = false; iconsStatus("Diagnostic cancelled", Ui.MUTED); }
         resolveBridge(false, e, "cancelled");
         if (themeRun) {
             themeRun = false;
@@ -4500,6 +4570,7 @@ public class Main extends Activity {
         renderLog();
         if (themeRun) themeResult(ok, e);
         if (iconsRun) iconsResult(ok, e);
+        if (iconsDiagnosticRun) iconsDiagnosticsResult(ok, e);
         if (fontThemeRun) fontResult(ok, e);
         if (stRun) settingsThemeResult(ok, e);
         if (miscRun) miscResult(ok, e);
