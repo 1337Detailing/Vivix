@@ -1610,9 +1610,9 @@ public class Main extends Activity {
         LinearLayout fallbackRow = Ui.row(this);
         fallbackRow.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout fallbackText = Ui.col(this);
-        fallbackText.addView(Ui.text(this, "Round icons not covered by pack", 14f, Ui.TEXT));
+        fallbackText.addView(Ui.text(this, "Auto-round opaque square icons", 14f, Ui.TEXT));
         fallbackText.addView(Ui.text(this,
-                "Restore circular corners on system apps and dock icons while keeping pack artwork unchanged.",
+                "Round icons with solid square backgrounds, whether from a pack or system. Transparent artwork stays intact.",
                 11.5f, Ui.MUTED));
         fallbackRow.addView(fallbackText, new LinearLayout.LayoutParams(0, -2, 1f));
         final MaterialSwitch roundSw = new MaterialSwitch(this);
@@ -2012,7 +2012,7 @@ public class Main extends Activity {
         root.addView(statusCard, statusLp);
 
         TextView note = Ui.text(this,
-                "Original mode preserves pack artwork. Apps not covered by the pack can be rendered round independently. Tap Apply icons with Game Mode open.",
+                "Original mode preserves full-color artwork. Auto-round trims opaque square corners from pack or system icons while leaving transparent icons alone.",
                 11.5f, Ui.MUTED);
         root.addView(note);
 
@@ -2260,8 +2260,8 @@ public class Main extends Activity {
             Drawable pack = packIconOrNull(iconsPackages.get(i));
             Drawable src = pack != null ? pack : orig;
             Bitmap pb = iconsOriginalMode
-                    ? (pack == null && iconsRoundFallback
-                            ? IconsTinter.renderRoundedFallback(src)
+                    ? (iconsRoundFallback
+                            ? IconsTinter.renderRoundOpaqueSquare(src)
                             : IconsTinter.renderOriginal(src))
                     : IconsTinter.compose(src, iconsColor, iconsDesat, iconsLighten, iconsStrength,
                             iconsBgEnabled, iconsBgColor, iconsScale, iconsFgScale, iconsRadius, iconsShape);
@@ -2405,11 +2405,11 @@ public class Main extends Activity {
                         Drawable pack = packIconOrNull(pkg);
                         Drawable src = pack != null ? pack : orig;
                         if (src != null) {
-                            // Only native fallbacks receive a round clip. The
-                            // real pack drawables remain completely unmodified.
+                            // Detect square opaque backgrounds for both packed and
+                            // fallback app icons; transparent designs remain intact.
                             bmp = iconsOriginalMode
-                                    ? (pack == null && iconsRoundFallback
-                                            ? IconsTinter.renderRoundedFallback(src)
+                                    ? (iconsRoundFallback
+                                            ? IconsTinter.renderRoundOpaqueSquare(src)
                                             : IconsTinter.renderOriginal(src))
                                     : IconsTinter.compose(src, iconsColor, iconsDesat, iconsLighten,
                                             iconsStrength, iconsBgEnabled, iconsBgColor,
