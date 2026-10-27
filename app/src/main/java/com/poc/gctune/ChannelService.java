@@ -54,6 +54,7 @@ public class ChannelService extends Service {
     private int curAck;
     private long deadline;
     private boolean daemon;
+    private boolean allowRetries;
     private volatile int bcAck = 0;
     private volatile String bcOut = null;
     private int retries = 0;
@@ -99,6 +100,10 @@ public class ChannelService extends Service {
         public void run() {
             if (!running || !daemon) return;
             Log.i("GCTune", "WAKE " + curAck);
+            // Re-dispatch is unsafe for non-idempotent icon installations:
+            // a duplicate observes its own active lock and can ACK BUSY before
+            // the original, successful invocation has returned.
+            if (!allowRetries) return;
             if (retries < RETRY_MS.length) {
                 long at = System.currentTimeMillis() + RETRY_MS[retries];
                 retries++;
@@ -108,12 +113,14 @@ public class ChannelService extends Service {
     };
 
     /** Entry point from Main; layer is created inside the service. */
-    public static void start(Context ctx, int ack, String layerName, long deadlineMs, boolean daemon) {
+    public static void start(Context ctx, int ack, String layerName, long deadlineMs,
+                             boolean daemon, boolean allowRetries) {
         Intent i = new Intent(ctx, ChannelService.class);
         i.putExtra("ack", ack);
         i.putExtra("layer", layerName);
         i.putExtra("deadline", deadlineMs);
         i.putExtra("daemon", daemon);
+        i.putExtra("allowRetries", allowRetries);
         try {
             ctx.startForegroundService(i);
         } catch (Throwable t) {
@@ -140,6 +147,7 @@ public class ChannelService extends Service {
         curAck = i.getIntExtra("ack", 0);
         deadline = i.getLongExtra("deadline", System.currentTimeMillis() + 60000L);
         daemon = i.getBooleanExtra("daemon", true);
+        allowRetries = i.getBooleanExtra("allowRetries", true);
         bcAck = 0;
         bcOut = null;
         retries = 0;
