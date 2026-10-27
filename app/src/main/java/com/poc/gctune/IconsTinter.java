@@ -589,6 +589,44 @@ final class IconsTinter {
         return bitmap;
     }
 
+    /**
+     * Android adaptive icons contain square background/foreground layers. A
+     * launcher normally applies its system shape mask to these layers, but
+     * Vivix's full-coverage theme mask intentionally preserves icon-pack
+     * artwork and therefore leaves uncovered apps as visible squares.
+     *
+     * Apply a per-icon circular alpha mask ONLY to app icons that aren't
+     * present in the selected pack. This keeps the pack artwork untouched.
+     */
+    static Bitmap renderRoundedFallback(Drawable icon) {
+        Bitmap original = renderOriginal(icon);
+        if (original == null) return null;
+        Bitmap mask = null;
+        try {
+            final int width = original.getWidth();
+            final int height = original.getHeight();
+            mask = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas mc = new Canvas(mask);
+            Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+            fill.setColor(Color.BLACK);
+            mc.drawCircle(width * 0.5f, height * 0.5f,
+                    Math.min(width, height) * 0.5f - 1f, fill);
+
+            Canvas canvas = new Canvas(original);
+            Paint alpha = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            alpha.setXfermode(new android.graphics.PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+            canvas.drawBitmap(mask, 0f, 0f, alpha);
+            alpha.setXfermode(null);
+            return original;
+        } catch (Throwable e) {
+            // Preserve the original icon if masking fails instead of crashing
+            // the entire theme installation.
+            return original;
+        } finally {
+            if (mask != null) mask.recycle();
+        }
+    }
+
     /** Draws the drawable into the given box of a fresh size x size bitmap. */
     private static Bitmap drawIcon(Drawable icon, float l, float t, float r, float b, int size) {
         if (icon == null) return null;

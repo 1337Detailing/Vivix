@@ -264,6 +264,7 @@ public class Main extends Activity {
     // Preserve the original colors and transparency of Play Store icon packs.
     // Users can switch back to the legacy monochrome recolor studio.
     private boolean iconsOriginalMode = true;
+    private boolean iconsRoundFallback = true;
     private int iconsBgColor = 0xFFFFFFFF;
     private boolean iconsMonetEnabled = false;
     private int iconsScale = 100;
@@ -1522,6 +1523,7 @@ public class Main extends Activity {
         iconsPackPkg = prefs.getString("icons_pack", iconsPackPkg);
         iconsPackLabel = prefs.getString("icons_pack_label", iconsPackLabel);
         iconsOriginalMode = prefs.getBoolean("icons_original_mode", true);
+        iconsRoundFallback = prefs.getBoolean("icons_round_fallback", true);
         iconsBgEnabled = prefs.getBoolean("icons_bg", iconsBgEnabled);
         iconsBgColor = prefs.getInt("icons_bg_color", iconsBgColor);
         iconsMonetEnabled = prefs.getBoolean("icons_monet", iconsMonetEnabled);
@@ -1602,6 +1604,31 @@ public class Main extends Activity {
         tintSwitch(originalSw);
         modeRow.addView(originalSw);
         modeCard.addView(modeRow);
+
+        // Native adaptive icons need a round per-app mask when the selected
+        // Play Store pack does not supply artwork for that application.
+        LinearLayout fallbackRow = Ui.row(this);
+        fallbackRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout fallbackText = Ui.col(this);
+        fallbackText.addView(Ui.text(this, "Round icons not covered by pack", 14f, Ui.TEXT));
+        fallbackText.addView(Ui.text(this,
+                "Restore circular corners on system apps and dock icons while keeping pack artwork unchanged.",
+                11.5f, Ui.MUTED));
+        fallbackRow.addView(fallbackText, new LinearLayout.LayoutParams(0, -2, 1f));
+        final MaterialSwitch roundSw = new MaterialSwitch(this);
+        roundSw.setChecked(iconsRoundFallback);
+        tintSwitch(roundSw);
+        fallbackRow.addView(roundSw);
+        modeCard.addView(fallbackRow);
+        fallbackRow.setVisibility(iconsOriginalMode ? View.VISIBLE : View.GONE);
+        roundSw.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+            @Override public void onCheckedChanged(android.widget.CompoundButton button, boolean checked) {
+                iconsRoundFallback = checked;
+                saveIconsPrefs();
+                refreshIconsPreview();
+            }
+        });
+
         LinearLayout.LayoutParams modeLp = new LinearLayout.LayoutParams(-1, -2);
         modeLp.bottomMargin = Ui.dp(this, 14);
         root.addView(modeCard, modeLp);
@@ -1944,6 +1971,7 @@ public class Main extends Activity {
         originalSw.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
             @Override public void onCheckedChanged(android.widget.CompoundButton button, boolean checked) {
                 iconsOriginalMode = checked;
+                fallbackRow.setVisibility(checked ? View.VISIBLE : View.GONE);
                 colorCard.setVisibility(checked ? View.GONE : View.VISIBLE);
                 tuneCard.setVisibility(checked ? View.GONE : View.VISIBLE);
                 styleCard.setVisibility(checked ? View.GONE : View.VISIBLE);
@@ -1984,7 +2012,7 @@ public class Main extends Activity {
         root.addView(statusCard, statusLp);
 
         TextView note = Ui.text(this,
-                "Original mode preserves each app icon's original artwork. Select a Play Store pack above; unavailable pack icons fall back to the installed app icon. Apply with Game Mode open.",
+                "Original mode preserves pack artwork. Apps not covered by the pack can be rendered round independently. Tap Apply icons with Game Mode open.",
                 11.5f, Ui.MUTED);
         root.addView(note);
 
@@ -2084,6 +2112,7 @@ public class Main extends Activity {
                 .putString("icons_pack", iconsPackPkg)
                 .putString("icons_pack_label", iconsPackLabel)
                 .putBoolean("icons_original_mode", iconsOriginalMode)
+                .putBoolean("icons_round_fallback", iconsRoundFallback)
                 .putBoolean("icons_bg", iconsBgEnabled)
                 .putInt("icons_bg_color", iconsBgColor)
                 .putBoolean("icons_monet", iconsMonetEnabled)
@@ -2228,10 +2257,12 @@ public class Main extends Activity {
         int previewH = Math.max(Ui.dp(this, 28), Math.min(Ui.dp(this, 72), Math.round(Ui.dp(this, 44) * (iconsScale / 100f))));
         for (int i = 0; i < n; i++) {
             Drawable orig = iconsOriginals.get(i);
-            Drawable src = packIconOrNull(iconsPackages.get(i));
-            if (src == null) src = orig;
+            Drawable pack = packIconOrNull(iconsPackages.get(i));
+            Drawable src = pack != null ? pack : orig;
             Bitmap pb = iconsOriginalMode
-                    ? IconsTinter.renderOriginal(src)
+                    ? (pack == null && iconsRoundFallback
+                            ? IconsTinter.renderRoundedFallback(src)
+                            : IconsTinter.renderOriginal(src))
                     : IconsTinter.compose(src, iconsColor, iconsDesat, iconsLighten, iconsStrength,
                             iconsBgEnabled, iconsBgColor, iconsScale, iconsFgScale, iconsRadius, iconsShape);
             Drawable tinted = (pb != null) ? new BitmapDrawable(getResources(), pb) : orig;
@@ -2371,11 +2402,15 @@ public class Main extends Activity {
                     Bitmap bmp = null;
                     try {
                         Drawable orig = iconsOriginals.get(i);
-                        Drawable src = packIconOrNull(pkg);
-                        if (src == null) src = orig;
+                        Drawable pack = packIconOrNull(pkg);
+                        Drawable src = pack != null ? pack : orig;
                         if (src != null) {
+                            // Only native fallbacks receive a round clip. The
+                            // real pack drawables remain completely unmodified.
                             bmp = iconsOriginalMode
-                                    ? IconsTinter.renderOriginal(src)
+                                    ? (pack == null && iconsRoundFallback
+                                            ? IconsTinter.renderRoundedFallback(src)
+                                            : IconsTinter.renderOriginal(src))
                                     : IconsTinter.compose(src, iconsColor, iconsDesat, iconsLighten,
                                             iconsStrength, iconsBgEnabled, iconsBgColor,
                                             iconsScale, iconsFgScale, iconsRadius, iconsShape);
