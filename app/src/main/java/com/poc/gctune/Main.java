@@ -261,6 +261,9 @@ public class Main extends Activity {
     private TextView iconsSourceValue;
     // IconPack Studio style: background layer + foreground icon
     private boolean iconsBgEnabled = false;
+    // Preserve the original colors and transparency of Play Store icon packs.
+    // Users can switch back to the legacy monochrome recolor studio.
+    private boolean iconsOriginalMode = true;
     private int iconsBgColor = 0xFFFFFFFF;
     private boolean iconsMonetEnabled = false;
     private int iconsScale = 100;
@@ -1518,6 +1521,7 @@ public class Main extends Activity {
         iconsStrength = prefs.getInt("icons_strength", iconsStrength);
         iconsPackPkg = prefs.getString("icons_pack", iconsPackPkg);
         iconsPackLabel = prefs.getString("icons_pack_label", iconsPackLabel);
+        iconsOriginalMode = prefs.getBoolean("icons_original_mode", true);
         iconsBgEnabled = prefs.getBoolean("icons_bg", iconsBgEnabled);
         iconsBgColor = prefs.getInt("icons_bg_color", iconsBgColor);
         iconsMonetEnabled = prefs.getBoolean("icons_monet", iconsMonetEnabled);
@@ -1581,6 +1585,26 @@ public class Main extends Activity {
         srcCardLp.topMargin = Ui.dp(this, 16);
         srcCardLp.bottomMargin = Ui.dp(this, 14);
         root.addView(srcCard, srcCardLp);
+
+        // ---- rendering mode. The default is a faithful, full-color pack.
+        LinearLayout modeCard = Ui.col(this);
+        modeCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        modeCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
+        modeCard.addView(Ui.section(this, "Icon appearance"));
+        LinearLayout modeRow = Ui.row(this);
+        modeRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout modeText = Ui.col(this);
+        modeText.addView(Ui.text(this, "Original pack icons", 14f, Ui.TEXT));
+        modeText.addView(Ui.text(this, "Keep original colors, transparency and shape. No tint or background.", 11.5f, Ui.MUTED));
+        modeRow.addView(modeText, new LinearLayout.LayoutParams(0, -2, 1f));
+        final MaterialSwitch originalSw = new MaterialSwitch(this);
+        originalSw.setChecked(iconsOriginalMode);
+        tintSwitch(originalSw);
+        modeRow.addView(originalSw);
+        modeCard.addView(modeRow);
+        LinearLayout.LayoutParams modeLp = new LinearLayout.LayoutParams(-1, -2);
+        modeLp.bottomMargin = Ui.dp(this, 14);
+        root.addView(modeCard, modeLp);
 
         // ---- color picker & Monet mode
         LinearLayout colorCard = Ui.col(this);
@@ -1912,9 +1936,28 @@ public class Main extends Activity {
         styleCardLp.bottomMargin = Ui.dp(this, 14);
         root.addView(styleCard, styleCardLp);
 
+        // The recoloring studio is optional, and must not affect unmodified
+        // pack icons or fill them with colored tiles.
+        colorCard.setVisibility(iconsOriginalMode ? View.GONE : View.VISIBLE);
+        tuneCard.setVisibility(iconsOriginalMode ? View.GONE : View.VISIBLE);
+        styleCard.setVisibility(iconsOriginalMode ? View.GONE : View.VISIBLE);
+        originalSw.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+            @Override public void onCheckedChanged(android.widget.CompoundButton button, boolean checked) {
+                iconsOriginalMode = checked;
+                colorCard.setVisibility(checked ? View.GONE : View.VISIBLE);
+                tuneCard.setVisibility(checked ? View.GONE : View.VISIBLE);
+                styleCard.setVisibility(checked ? View.GONE : View.VISIBLE);
+                saveIconsPrefs();
+                refreshIconsPreview();
+                iconsStatus(checked
+                        ? "Original pack mode enabled — icon artwork will keep its colors."
+                        : "Recolor mode enabled — tint and shape settings will be applied.", Ui.ACCENT);
+            }
+        });
+
         // ---- apply button
         View apply = pillButton(M3Icons.play(Ui.ACCENT, Ui.dp(this, 18)),
-                "Recolor and apply",
+                "Apply icons",
                 new View.OnClickListener() {
                     @Override public void onClick(View v) { runIconsApply(); }
                 });
@@ -1934,14 +1977,14 @@ public class Main extends Activity {
         LinearLayout statusCard = Ui.col(this);
         statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 12f, Ui.BORDER, 1.2f));
         statusCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 12), Ui.dp(this, 14), Ui.dp(this, 12));
-        iconsStatusText = Ui.text(this, "Choose a color and tap Recolor", 13f, Ui.MUTED);
+        iconsStatusText = Ui.text(this, "Choose a pack, preview it and tap Apply icons", 13f, Ui.MUTED);
         statusCard.addView(iconsStatusText);
         LinearLayout.LayoutParams statusLp = new LinearLayout.LayoutParams(-1, -2);
         statusLp.bottomMargin = Ui.dp(this, 14);
         root.addView(statusCard, statusLp);
 
         TextView note = Ui.text(this,
-                "ADW/Nova packs can be imported. Apply while Game Mode is open.",
+                "Original mode preserves each app icon's original artwork. Select a Play Store pack above; unavailable pack icons fall back to the installed app icon. Apply with Game Mode open.",
                 11.5f, Ui.MUTED);
         root.addView(note);
 
@@ -2040,6 +2083,7 @@ public class Main extends Activity {
                 .putInt("icons_strength", iconsStrength)
                 .putString("icons_pack", iconsPackPkg)
                 .putString("icons_pack_label", iconsPackLabel)
+                .putBoolean("icons_original_mode", iconsOriginalMode)
                 .putBoolean("icons_bg", iconsBgEnabled)
                 .putInt("icons_bg_color", iconsBgColor)
                 .putBoolean("icons_monet", iconsMonetEnabled)
@@ -2186,8 +2230,10 @@ public class Main extends Activity {
             Drawable orig = iconsOriginals.get(i);
             Drawable src = packIconOrNull(iconsPackages.get(i));
             if (src == null) src = orig;
-            Bitmap pb = IconsTinter.compose(src, iconsColor, iconsDesat, iconsLighten, iconsStrength,
-                    iconsBgEnabled, iconsBgColor, iconsScale, iconsFgScale, iconsRadius, iconsShape);
+            Bitmap pb = iconsOriginalMode
+                    ? IconsTinter.renderOriginal(src)
+                    : IconsTinter.compose(src, iconsColor, iconsDesat, iconsLighten, iconsStrength,
+                            iconsBgEnabled, iconsBgColor, iconsScale, iconsFgScale, iconsRadius, iconsShape);
             Drawable tinted = (pb != null) ? new BitmapDrawable(getResources(), pb) : orig;
             iconsTinted.add(tinted);
             ImageView iv = new ImageView(this);
@@ -2308,7 +2354,7 @@ public class Main extends Activity {
         busy = true;
         // persist the whole recipe
         saveIconsPrefs();
-        iconsStatus("Recoloring icons…", Ui.ACCENT);
+        iconsStatus(iconsOriginalMode ? "Preparing full-color icon pack…" : "Recoloring icons…", Ui.ACCENT);
         showHint();
         final int total = iconsPackages.size();
         new Thread(new Runnable() {
@@ -2328,9 +2374,11 @@ public class Main extends Activity {
                         Drawable src = packIconOrNull(pkg);
                         if (src == null) src = orig;
                         if (src != null) {
-                            bmp = IconsTinter.compose(src, iconsColor, iconsDesat, iconsLighten,
-                                    iconsStrength, iconsBgEnabled, iconsBgColor,
-                                    iconsScale, iconsFgScale, iconsRadius, iconsShape);
+                            bmp = iconsOriginalMode
+                                    ? IconsTinter.renderOriginal(src)
+                                    : IconsTinter.compose(src, iconsColor, iconsDesat, iconsLighten,
+                                            iconsStrength, iconsBgEnabled, iconsBgColor,
+                                            iconsScale, iconsFgScale, iconsRadius, iconsShape);
                         }
                     } catch (Throwable t) {
                         Log.e("GCTune", "render " + pkg + " failed: " + t);
@@ -2354,7 +2402,7 @@ public class Main extends Activity {
                         final int d = done;
                         h.post(new Runnable() {
                             @Override public void run() {
-                                iconsStatus("Recolored " + d + " / " + total, Ui.ACCENT);
+                                iconsStatus((iconsOriginalMode ? "Prepared " : "Recolored ") + d + " / " + total, Ui.ACCENT);
                             }
                         });
                     }
@@ -2380,19 +2428,25 @@ public class Main extends Activity {
                     File launcherDir = new File(dir, "launcher");
                     launcherDir.mkdirs();
 
-                    Bitmap mask320 = IconsTinter.generateMask(320, 320, iconsShape, iconsRadius, iconsScale);
+                    Bitmap mask320 = iconsOriginalMode
+                            ? IconsTinter.generateFullMask(320, 320)
+                            : IconsTinter.generateMask(320, 320, iconsShape, iconsRadius, iconsScale);
                     FileOutputStream m320os = new FileOutputStream(new File(launcherDir, "icon_mask.png"));
                     mask320.compress(Bitmap.CompressFormat.PNG, 100, m320os);
                     m320os.close();
 
-                    Bitmap mask192 = IconsTinter.generateMask(192, 192, iconsShape, iconsRadius, iconsScale);
+                    Bitmap mask192 = iconsOriginalMode
+                            ? IconsTinter.generateFullMask(192, 192)
+                            : IconsTinter.generateMask(192, 192, iconsShape, iconsRadius, iconsScale);
                     FileOutputStream m192os = new FileOutputStream(new File(launcherDir, "icon_mask_5x9.png"));
                     mask192.compress(Bitmap.CompressFormat.PNG, 100, m192os);
                     m192os.close();
 
                     // Generate shape background with selected color (or tonal color from icon) so launcher's background tile matches shape
-                    Bitmap bg320 = IconsTinter.generateBg(320, 320, iconsShape, iconsRadius, iconsScale,
-                            iconsBgEnabled ? iconsBgColor : IconsTinter.getToneBgColor(iconsColor));
+                    Bitmap bg320 = iconsOriginalMode
+                            ? Bitmap.createBitmap(320, 320, Bitmap.Config.ARGB_8888)
+                            : IconsTinter.generateBg(320, 320, iconsShape, iconsRadius, iconsScale,
+                                    iconsBgEnabled ? iconsBgColor : IconsTinter.getToneBgColor(iconsColor));
                     FileOutputStream bgOs = new FileOutputStream(new File(launcherDir, "icon_bg_default.png"));
                     bg320.compress(Bitmap.CompressFormat.PNG, 100, bgOs);
                     bgOs.close();
