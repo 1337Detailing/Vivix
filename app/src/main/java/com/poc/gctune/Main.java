@@ -2345,8 +2345,11 @@ public class Main extends Activity {
                 }
                 // force the launcher to re-read theme icons; done here, in the
                 // app process — "settings put" in the channel NPEs in AppOps
+                // The launcher must be refreshed AFTER the channel has copied
+                // the new icons; refreshing before installation can only cache
+                // the previous assets. Save the user's original style for later.
                 pendingOldStyle = readIconsStyle();
-                styleToggleOk = toggleIconsStyle();
+                styleToggleOk = false;
                 final int fin = written;
                 final int ferr = failed;
                 h.post(new Runnable() {
@@ -2366,10 +2369,10 @@ public class Main extends Activity {
         }).start();
     }
 
-    /** Reads the launcher icon-style setting (saved across recolors). */
+    /** Reads the launcher icon style from Settings.System (as observed by BBKLauncher2). */
     private String readIconsStyle() {
         try {
-            String v = Settings.Global.getString(getContentResolver(), "theme_icons_style_explore");
+            String v = Settings.System.getString(getContentResolver(), "theme_icons_style_explore");
             return (v == null || v.isEmpty()) ? "1" : v;
         } catch (Throwable t) {
             return "1";
@@ -2377,41 +2380,41 @@ public class Main extends Activity {
     }
 
     /**
-     * Flips the launcher icon style 1 -> 2 -> 1 from the app process to force
-     * the launcher to re-read /data/bbkcore/theme/icons/. "settings put" run
-     * inside the uid1000 channel NPEs in AppOpsService (no calling package),
-     * so this needs the WRITE_SECURE_SETTINGS grant (adb pm grant). Returns
-     * false when the permission is missing.
+     * The OriginOS 7 launcher registers an observer on Settings.System,
+     * not Settings.Global, for theme_icons_style_explore.
+     * Trigger a distinct value after the icon files are installed, then
+     * restore the user's original setting after the observer can process it.
      */
-    private boolean toggleIconsStyle() {
+    private boolean toggleIconsStyle(final String originalValue) {
         try {
-            Settings.Global.putInt(getContentResolver(), "theme_icons_style_explore", 1);
-            Settings.Global.putInt(getContentResolver(), "theme_icons_style_explore", 2);
-            Settings.Global.putInt(getContentResolver(), "theme_icons_style_explore", 1);
-            // Map iconsScale (40-160%) to OriginOS desktop icon size: 0 (small), 1 (normal), 2 (large), 3 (huge)
-            int originSize = (iconsScale <= 70) ? 0 : (iconsScale <= 95 ? 1 : (iconsScale <= 125 ? 2 : 3));
-            try {
-                Settings.System.putInt(getContentResolver(), "current_desktop_iconsize", originSize);
-                Settings.System.putInt(getContentResolver(), "deform_icons_size_explore", originSize);
-            } catch (Throwable ignored) {}
+            final String key = "theme_icons_style_explore";
+            final int original = Integer.parseInt(originalValue.trim());
+            final int temporary = (original == 2) ? 1 : 2;
+            if (!Settings.System.putInt(getContentResolver(), key, temporary)
+                    || Settings.System.getInt(getContentResolver(), key, -1) != temporary) {
+                Log.e("Vivix", "OriginOS icon-style refresh not accepted by Settings.System");
+                return false;
+            }
+            h.postDelayed(new Runnable() {
+                @Override public void run() {
+                    restoreIconsStyle(originalValue);
+                }
+            }, 600L);
             return true;
         } catch (Throwable t) {
-            Log.e("GCTune", "toggleIconsStyle failed: " + t);
+            Log.e("Vivix", "toggleIconsStyle failed: " + t);
             return false;
         }
     }
 
-    /** Puts the user's own icon style back after the recolor. */
+    /** Restore exactly the system icon style the user had before applying. */
     private void restoreIconsStyle(String old) {
         try {
-            Settings.Global.putInt(getContentResolver(), "theme_icons_style_explore",
-                    Integer.parseInt(old.trim()));
-            int originSize = (iconsScale <= 70) ? 0 : (iconsScale <= 95 ? 1 : (iconsScale <= 125 ? 2 : 3));
-            try {
-                Settings.System.putInt(getContentResolver(), "current_desktop_iconsize", originSize);
-                Settings.System.putInt(getContentResolver(), "deform_icons_size_explore", originSize);
-            } catch (Throwable ignored) {}
-        } catch (Throwable ignored) {
+            boolean ok = Settings.System.putInt(getContentResolver(),
+                    "theme_icons_style_explore", Integer.parseInt(old.trim()));
+            if (!ok) Log.e("Vivix", "Could not restore system icon-style preference");
+        } catch (Throwable t) {
+            Log.e("Vivix", "restoreIconsStyle failed: " + t);
         }
     }
 
@@ -2524,14 +2527,16 @@ public class Main extends Activity {
 
     /** Turns the uid 1000 output of the icons command into a human status line. */
     private void iconsResult(boolean ok, Entry e) {
-        // the launcher restarts finished — give the user's own style back
-        if (pendingOldStyle != null) {
-            restoreIconsStyle(pendingOldStyle);
-            pendingOldStyle = null;
-        }
         iconsRun = false;
         hideHint();
         String out = (ok && e != null && e.out != null) ? e.out : "";
+        if (ok && out.contains("APPLIED") && !out.contains("NO_ICONS")
+                && pendingOldStyle != null) {
+            // The shell reports completed file copies, not a visual change.
+            // Refresh the exact Settings.System observer watched by BBKLauncher2.
+            styleToggleOk = toggleIconsStyle(pendingOldStyle);
+        }
+        pendingOldStyle = null;
         if (!ok) {
             iconsStatus("No response from uid 1000 — open Game Mode and retry", Ui.ERROR);
         } else if (out.contains("NO_ICONS")) {
