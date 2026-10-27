@@ -1,0 +1,33 @@
+# Build artifacts
+classes/
+*.class
+*.dex
+*.jar
+*.apk
+*.idsig
+.gradle/
+build/
+app/build/
+local.properties
+
+# Backups & temp files
+*.bak
+*.tmp
+*~
+
+# Temporary test images and logs
+*.png
+*.jpg
+*.sh
+*.txt
+*.json
+rev2/
+intake/
+geo-sleuth/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
