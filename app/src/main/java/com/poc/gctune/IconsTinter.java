@@ -569,6 +569,26 @@ final class IconsTinter {
 
     // ------------------------------------------------------------------ pipeline
 
+    /**
+     * Render an installed pack drawable as-is, without tinting, clipping,
+     * adding a colored badge or cropping its alpha. Preserve pack colors,
+     * details, transparency and its intended padding.
+     */
+    static Bitmap renderOriginal(Drawable icon) {
+        if (icon == null) return null;
+        return drawIcon(icon, 0f, 0f, 320f, 320f, 320);
+    }
+
+    /**
+     * OriginOS uses this alpha mask while composing theme icons. In original
+     * pack mode, leave every pixel available so the pack's own shape wins.
+     */
+    static Bitmap generateFullMask(int width, int height) {
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(Color.BLACK);
+        return bitmap;
+    }
+
     /** Draws the drawable into the given box of a fresh size x size bitmap. */
     private static Bitmap drawIcon(Drawable icon, float l, float t, float r, float b, int size) {
         if (icon == null) return null;
