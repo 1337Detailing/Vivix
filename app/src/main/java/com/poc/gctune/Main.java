@@ -2219,6 +2219,15 @@ public class Main extends Activity {
             toast("Wait for the current command");
             return;
         }
+        // The original installer deletes/replaces the current theme icon directory
+        // and restarts the launcher. Do not attempt that without the permission
+        // needed to refresh theme_icons_style_explore.
+        if (checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            iconsStatus("Missing WRITE_SECURE_SETTINGS. Grant through an ADB shell: pm grant com.poc.gctune android.permission.WRITE_SECURE_SETTINGS", Ui.ERROR);
+            toast("Grant WRITE_SECURE_SETTINGS before applying icons");
+            return;
+        }
         if (iconsPackages.isEmpty()) {
             loadLauncherApps();
         }
@@ -2541,9 +2550,12 @@ public class Main extends Activity {
                 }
                 if (sb.length() > 0) n = " (" + sb + " icons)";
             }
-            iconsStatus("Icons applied" + n + " — check the launcher"
-                    + (styleToggleOk ? "" : " (style not switched: missing WRITE_SECURE_SETTINGS)"),
-                    Ui.ACCENT);
+            // APPLIED_ICONS counts PNG files on disk. It does not prove that
+            // the Vivo launcher rendered the new assets.
+            iconsStatus(styleToggleOk
+                    ? "Icon files copied" + n + ". Check the launcher — visual update not verified."
+                    : "Icon files copied" + n + ", but the icon style was not refreshed. Grant WRITE_SECURE_SETTINGS.",
+                    styleToggleOk ? Ui.MUTED : Ui.ERROR);
         } else {
             iconsStatus("Details in console (Shell tab)", Ui.TEXT);
         }
