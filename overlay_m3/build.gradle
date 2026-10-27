@@ -1,0 +1,30 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.poc.gctune.overlay.m3'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.poc.gctune.overlay.m3'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    lint {
+        abortOnError false
+    }
+}
