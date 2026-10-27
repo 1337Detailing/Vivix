@@ -627,6 +627,47 @@ final class IconsTinter {
         }
     }
 
+    /**
+     * Auto-round square artwork from both icon packs and uncovered apps.
+     * The previous "fallback-only" heuristic missed square bitmaps already
+     * supplied by the user's icon pack. Keep all artwork that already has
+     * transparent corners exactly as delivered by the icon designer.
+     *
+     * Returns a bitmap sized identically to renderOriginal, so the preview
+     * and installed PNG have the same geometry.
+     */
+    static Bitmap renderRoundOpaqueSquare(Drawable icon) {
+        Bitmap bitmap = renderOriginal(icon);
+        if (bitmap == null) return null;
+        final int w = bitmap.getWidth();
+        final int h = bitmap.getHeight();
+        final int inset = Math.max(2, Math.min(w, h) / 64);
+        try {
+            boolean square = Color.alpha(bitmap.getPixel(inset, inset)) >= 245
+                    && Color.alpha(bitmap.getPixel(w - 1 - inset, inset)) >= 245
+                    && Color.alpha(bitmap.getPixel(inset, h - 1 - inset)) >= 245
+                    && Color.alpha(bitmap.getPixel(w - 1 - inset, h - 1 - inset)) >= 245;
+            if (!square) return bitmap;
+            Bitmap mask = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            try {
+                Canvas mc = new Canvas(mask);
+                Paint opaque = new Paint(Paint.ANTI_ALIAS_FLAG);
+                opaque.setColor(Color.BLACK);
+                mc.drawCircle(w / 2f, h / 2f, (Math.min(w, h) - 2f) / 2f, opaque);
+                Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+                p.setXfermode(new android.graphics.PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+                new Canvas(bitmap).drawBitmap(mask, 0, 0, p);
+                p.setXfermode(null);
+            } finally {
+                mask.recycle();
+            }
+        } catch (Throwable t) {
+            // Never fail the complete icon installation for an individual
+            // icon: return the original full-color image on failure.
+        }
+        return bitmap;
+    }
+
     /** Draws the drawable into the given box of a fresh size x size bitmap. */
     private static Bitmap drawIcon(Drawable icon, float l, float t, float r, float b, int size) {
         if (icon == null) return null;
