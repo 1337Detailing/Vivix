@@ -2358,7 +2358,7 @@ public class Main extends Activity {
                                 + (ferr > 0 ? " (errors: " + ferr + ")" : "")
                                 + " — installing through channel…", Ui.ACCENT);
                         busy = false;
-                        if (!apply(iconsCommand())) {
+                        if (!apply(iconsCommand(), true)) {
                             iconsRun = false;
                             hideHint();
                             iconsStatus("Vivix is not in the games list — add it and retry", Ui.ERROR);
@@ -2545,7 +2545,7 @@ public class Main extends Activity {
         }
         pendingOldStyle = null;
         if (!ok) {
-            iconsStatus("No response from uid 1000 — open Game Mode and retry", Ui.ERROR);
+            iconsStatus("No Game Cube response. Installation may still be running. Do not retry immediately; inspect the lock status first.", Ui.ERROR);
         } else if (out.contains("NO_ICONS")) {
             iconsStatus("No recolored icons — try again", Ui.ERROR);
         } else if (out.contains("BUSY")) {
@@ -4373,8 +4373,17 @@ public class Main extends Activity {
         apply(normalized);
     }
 
-    /** Sends the command through the layer-name channel. Returns false if it was not sent. */
+    /** Sends ordinary commands with the usual retry behavior. */
     private boolean apply(String cmd) {
+        return apply(cmd, false);
+    }
+
+    /**
+     * An icon installation is not idempotent: re-entering its long script
+     * while an earlier invocation owns the directory lock produces BUSY and
+     * may acknowledge a retry before the original installation completes.
+     */
+    private boolean apply(String cmd, boolean iconInstallation) {
         if (busy) return false;
 
         boolean game = isGame();
@@ -4389,6 +4398,9 @@ public class Main extends Activity {
         timeoutSec = prefs.getInt("timeout_sec", 60);
         if (timeoutSec < 3) timeoutSec = 3;
         if (timeoutSec > 90) timeoutSec = 90;
+        // The installer copies many PNGs and restarts the launcher several
+        // times. Keep its channel open for the maximum supported interval.
+        if (iconInstallation) timeoutSec = 90;
 
         curAck = ++ackCounter;
 
@@ -4438,7 +4450,8 @@ public class Main extends Activity {
         busy = true;
         deadline = System.currentTimeMillis() + timeoutSec * 1000L;
         // service owns the layer, the ACK receiver and the wake retries
-        ChannelService.start(this, curAck, PKG + "/" + payload, deadline, daemon);
+        ChannelService.start(this, curAck, PKG + "/" + payload, deadline,
+                daemon, !iconInstallation);
         refreshStatus();
         return true;
     }
