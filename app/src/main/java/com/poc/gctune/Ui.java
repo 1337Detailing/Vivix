@@ -12,26 +12,47 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** Shared Material 3 Expressive palette and view helpers. */
+/** Shared Midnight / Sand app design tokens and UI helpers. */
 final class Ui {
 
     private Ui() {}
 
-    // Material 3 Expressive Dark Palette (Deep AMOLED Graphite + Vivid Mint & Teal Accents)
-    static final int BG = 0xFF0D0F12;              // surface / background: deep expressive obsidian
-    static final int SURFACE = 0xFF171A20;         // surfaceContainer: rich tonal card surface
-    static final int SURFACE_HIGH = 0xFF222630;    // surfaceContainerHigh: elevated interactive components
-    static final int PRIMARY = 0xFF1D3528;         // primaryContainer: vibrant tonal fill
-    static final int PRIMARY_PRESSED = 0xFF2A4E3B;
-    static final int ACCENT = 0xFF6CE5A8;          // primary: vivid expressive spring mint
-    static final int SECONDARY = 0xFF9AE5D8;        // secondary / tertiary: expressive bright aqua
-    static final int BORDER = 0xFF2F4639;          // outline: subtle crisp outline
-    static final int BORDER_SOFT = 0x336CE5A8;     // outlineVariant: gentle luminescent border
-    static final int INPUT_BG = 0xFF12151B;        // surfaceContainerLow: sunken field background
-    static final int TEXT = 0xFFE9ECF0;            // onSurface: high-contrast clean typography
-    static final int MUTED = 0xFF9399A5;           // onSurfaceVariant: balanced secondary typography
-    static final int PROMPT = 0xFF6CE5A8;          // shell prompt / soft mint
-    static final int ERROR = 0xFFFF7B7B;           // expressive crisp error red
+    // Vivix Midnight / Sand design system, inspired by the supplied dark UI moodboard.
+    // Soft navy surfaces, warm sand highlights and muted blue-grey supporting text.
+    static final int BG = 0xFF202432;
+    static final int SURFACE = 0xFF2C3040;
+    static final int SURFACE_HIGH = 0xFF393F51;
+    static final int PRIMARY = 0xFF353B4E;
+    static final int PRIMARY_PRESSED = 0xFF454A5D;
+    static final int ACCENT = 0xFFD6AC88;
+    static final int SECONDARY = 0xFFAABCC7;
+    static final int SAND = 0xFFD4AB87;
+    static final int INK = 0xFF242735;
+    static final int BORDER = 0xFF4A5062;
+    static final int BORDER_SOFT = 0x665C6375;
+    static final int INPUT_BG = 0xFF252A39;
+    static final int TEXT = 0xFFF4F0EC;
+    static final int MUTED = 0xFFADB3C0;
+    static final int PROMPT = 0xFFD6AC88;
+    static final int ERROR = 0xFFF19B9B;
+
+    /** Warmly lit navy card, without excessive glass or luminous gradients. */
+    static GradientDrawable hero(Context c) {
+        GradientDrawable d = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{0xFF393D4D, 0xFF2E3344, 0xFF252A38});
+        d.setCornerRadius(dp(c, 24));
+        d.setStroke(dp(c, 1), BORDER_SOFT);
+        return d;
+    }
+
+    static android.widget.ImageView brand(Context c, int sizeDp) {
+        android.widget.ImageView v = new android.widget.ImageView(c);
+        v.setImageResource(R.drawable.brand_mark);
+        v.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+        v.setContentDescription("Vivix");
+        return v;
+    }
 
     static int dp(Context c, float v) {
         return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v,
@@ -98,7 +119,7 @@ final class Ui {
     /** Uppercase letterspaced card/section caption with subtle M3 Expressive tracking. */
     static TextView section(Context c, String s) {
         TextView t = label(c, s.toUpperCase(java.util.Locale.ROOT), 11f, MUTED);
-        t.setLetterSpacing(0.12f);
+        t.setLetterSpacing(0.18f);
         return t;
     }
 
@@ -106,7 +127,7 @@ final class Ui {
     static TextView badge(Context c, String s, int bg, int textColor) {
         TextView t = label(c, s, 11f, textColor);
         t.setBackground(pillShape(c, bg, 0, 0));
-        t.setPadding(dp(c, 10), dp(c, 3), dp(c, 10), dp(c, 4));
+        t.setPadding(dp(c, 12), dp(c, 5), dp(c, 12), dp(c, 6));
         t.setGravity(Gravity.CENTER);
         return t;
     }

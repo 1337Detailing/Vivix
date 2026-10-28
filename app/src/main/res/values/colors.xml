@@ -1,1 +1,5 @@
-<resources><color name="launcher_background">#B7EFC5</color></resources>
+<resources>
+    <color name="launcher_background">#1D1F2B</color>
+    <color name="vivix_sand">#D6AC88</color>
+    <color name="vivix_navy">#202432</color>
+</resources>
