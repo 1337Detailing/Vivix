@@ -496,8 +496,13 @@ public class Main extends Activity {
         root.setPadding(Ui.dp(this, 18), Ui.dp(this, 22), Ui.dp(this, 18), Ui.dp(this, 30));
         scroll.addView(root, new FrameLayout.LayoutParams(-1, -2));
 
-        root.addView(topBar());
         root.addView(titleRow());
+        root.addView(topBar());
+        TextView commandCaption = Ui.section(this, "COMMAND STUDIO");
+        commandCaption.setTextColor(Ui.ACCENT);
+        LinearLayout.LayoutParams captionLp = new LinearLayout.LayoutParams(-1, -2);
+        captionLp.topMargin = Ui.dp(this, 12);
+        root.addView(commandCaption, captionLp);
         root.addView(inputRow());
         root.addView(consoleCard());
         return scroll;
@@ -507,7 +512,7 @@ public class Main extends Activity {
         TextView paste = Ui.label(this, "Paste", 13.5f, Ui.ACCENT);
         paste.setGravity(Gravity.CENTER);
         paste.setPadding(Ui.dp(this, 18), Ui.dp(this, 12), Ui.dp(this, 18), Ui.dp(this, 12));
-        paste.setBackground(Ui.pillRipple(this, Ui.PRIMARY, 0x40FFFFFF));
+        paste.setBackground(Ui.ripple(this, Ui.PRIMARY, 16f, 0x33D6AC88));
         paste.setCompoundDrawablesWithIntrinsicBounds(
                 M3Icons.clipboard(Ui.ACCENT, Ui.dp(this, 18)), null, null, null);
         paste.setCompoundDrawablePadding(Ui.dp(this, 8));
@@ -525,14 +530,14 @@ public class Main extends Activity {
     private LinearLayout navBar() {
         LinearLayout wrap = Ui.col(this);
         // M3 Expressive Floating Capsule Container: 30dp radius, subtle accent glow stroke
-        wrap.setBackground(Ui.shape(this, Ui.SURFACE, 30f, Ui.BORDER_SOFT, 1.2f));
-        wrap.setElevation(Ui.dp(this, 6));
+        wrap.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER, 1f));
+        wrap.setElevation(Ui.dp(this, 2));
 
         FrameLayout holder = new FrameLayout(this);
 
         // M3 Expressive active-indicator pill, slides between items with capsule shape
         navIndicator = new View(this);
-        navIndicator.setBackground(Ui.pillShape(this, Ui.PRIMARY, 0, 0));
+        navIndicator.setBackground(Ui.shape(this, Ui.PRIMARY_PRESSED, 15f, Ui.BORDER_SOFT, 1f));
         navIndicator.setAlpha(0f);
         holder.addView(navIndicator, new FrameLayout.LayoutParams(0, 0));
 
@@ -542,7 +547,7 @@ public class Main extends Activity {
         navItems[PAGE_SHELL] = navItem(PAGE_SHELL,
                 M3Icons.terminal(Ui.MUTED, Ui.dp(this, 22)), "Shell");
         navItems[PAGE_CUSTOM] = navItem(PAGE_CUSTOM,
-                M3Icons.grid(Ui.MUTED, Ui.dp(this, 22)), "Customization");
+                M3Icons.grid(Ui.MUTED, Ui.dp(this, 22)), "Studio");
         navItems[PAGE_SETTINGS] = navItem(PAGE_SETTINGS,
                 M3Icons.tune(Ui.MUTED, Ui.dp(this, 22)), "Settings");
         for (View v : navItems) {
@@ -600,7 +605,7 @@ public class Main extends Activity {
         item.setGravity(Gravity.CENTER);
         item.setPadding(Ui.dp(this, 6), Ui.dp(this, 8), Ui.dp(this, 6), Ui.dp(this, 8));
         // Expressive tap response via rounded capsule mask
-        item.setBackground(Ui.pillShape(this, 0x00000000, 0, 0));
+        item.setBackground(Ui.shape(this, 0x00000000, 15f, 0, 0));
 
         ImageView ic = new ImageView(this);
         ic.setImageDrawable(icon);
@@ -720,37 +725,54 @@ public class Main extends Activity {
         return b;
     }
 
+    /** Main brand / connection hero, based on the Midnight moodboard. */
     private View titleRow() {
-        LinearLayout row = Ui.row(this);
+        LinearLayout hero = Ui.col(this);
+        hero.setPadding(Ui.dp(this, 17), Ui.dp(this, 17),
+                Ui.dp(this, 17), Ui.dp(this, 17));
+        hero.setBackground(Ui.hero(this));
 
-        TextView title = Ui.label(this, "Vivix", 28f, Ui.TEXT);
-        title.setLetterSpacing(-0.01f);
-        row.addView(title, new LinearLayout.LayoutParams(0, -2, 1f));
+        LinearLayout heading = Ui.row(this);
+        FrameLayout tile = new FrameLayout(this);
+        tile.setBackground(Ui.shape(this, Ui.INK, 15f, Ui.BORDER_SOFT, 1f));
+        tile.addView(Ui.brand(this, 44), new FrameLayout.LayoutParams(
+                Ui.dp(this, 43), Ui.dp(this, 43), Gravity.CENTER));
+        heading.addView(tile, new LinearLayout.LayoutParams(
+                Ui.dp(this, 61), Ui.dp(this, 61)));
 
-        // M3 Expressive status capsule: pill container with glowing outline
+        LinearLayout brandText = Ui.col(this);
+        TextView eyebrow = Ui.section(this, "VIVIX  /  SYSTEM STUDIO");
+        eyebrow.setTextColor(Ui.ACCENT);
+        brandText.addView(eyebrow);
+        TextView title = Ui.label(this, "Vivix", 31f, Ui.TEXT);
+        title.setLetterSpacing(-0.035f);
+        brandText.addView(title);
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(0, -2, 1f);
+        textLp.leftMargin = Ui.dp(this, 14);
+        heading.addView(brandText, textLp);
+        hero.addView(heading);
+
         LinearLayout pill = Ui.row(this);
-        pill.setGravity(Gravity.CENTER_VERTICAL);
-        pill.setBackground(Ui.pillShape(this, Ui.SURFACE_HIGH, Ui.BORDER_SOFT, 1.2f));
-        pill.setPadding(Ui.dp(this, 12), Ui.dp(this, 6), Ui.dp(this, 14), Ui.dp(this, 6));
-
+        pill.setBackground(Ui.shape(this, Ui.PRIMARY, 14f, Ui.BORDER_SOFT, 1f));
+        pill.setPadding(Ui.dp(this, 13), Ui.dp(this, 10),
+                Ui.dp(this, 13), Ui.dp(this, 10));
         statusDot = new ImageView(this);
         statusDot.setImageDrawable(iconDotOff);
         statusDot.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(-2, -2);
-        dotLp.rightMargin = Ui.dp(this, 7);
+        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(
+                Ui.dp(this, 13), Ui.dp(this, 13));
+        dotLp.rightMargin = Ui.dp(this, 10);
         pill.addView(statusDot, dotLp);
-
-        statusText = Ui.text(this, "", 11.5f, Ui.MUTED);
+        statusText = Ui.label(this, "", 12f, Ui.MUTED);
         pill.addView(statusText);
-
-        LinearLayout.LayoutParams pillLp = new LinearLayout.LayoutParams(-2, -2);
-        pillLp.bottomMargin = Ui.dp(this, 4);
-        row.addView(pill, pillLp);
+        LinearLayout.LayoutParams pillLp = new LinearLayout.LayoutParams(-1, -2);
+        pillLp.topMargin = Ui.dp(this, 15);
+        hero.addView(pill, pillLp);
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = Ui.dp(this, 20);
-        row.setLayoutParams(lp);
-        return row;
+        lp.bottomMargin = Ui.dp(this, 15);
+        hero.setLayoutParams(lp);
+        return hero;
     }
 
     /** Breathing scale on the status dot while a command is in flight. */
@@ -781,7 +803,7 @@ public class Main extends Activity {
         LinearLayout box = Ui.col(this);
         // Expressive input shape: generous 22dp corner radius with deep background
         final android.graphics.drawable.GradientDrawable boxBg =
-                Ui.shape(this, Ui.INPUT_BG, 22f, Ui.BORDER, 1.2f);
+                Ui.shape(this, Ui.INPUT_BG, 17f, Ui.BORDER, 1.2f);
         box.setBackground(boxBg);
         box.setPadding(Ui.dp(this, 16), Ui.dp(this, 10), Ui.dp(this, 16), Ui.dp(this, 10));
 
@@ -810,7 +832,7 @@ public class Main extends Activity {
         runBtn = new ImageView(this);
         runBtn.setImageDrawable(iconPlay);
         runBtn.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        runBtn.setBackground(Ui.pillRipple(this, Ui.PRIMARY, 0x40FFFFFF));
+        runBtn.setBackground(Ui.ripple(this, Ui.PRIMARY, 16f, 0x33D6AC88));
         int p = Ui.dp(this, 14);
         runBtn.setPadding(p, p, p, p);
         runBtn.setElevation(Ui.dp(this, 3));
@@ -834,7 +856,7 @@ public class Main extends Activity {
     private View consoleCard() {
         LinearLayout card = Ui.col(this);
         // Expressive card container: 24dp radius, subtle micro-contrast border
-        card.setBackground(Ui.shape(this, Ui.SURFACE, 24f, Ui.BORDER_SOFT, 1.2f));
+        card.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1.2f));
 
         // ---- header: caption + copy-to-clipboard
         LinearLayout head = Ui.row(this);
@@ -845,7 +867,7 @@ public class Main extends Activity {
         ImageView copyBtn = new ImageView(this);
         copyBtn.setImageDrawable(M3Icons.clipboard(Ui.MUTED, Ui.dp(this, 17)));
         copyBtn.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        copyBtn.setBackground(Ui.pillRipple(this, 0x00000000, 0x306CE5A8));
+        copyBtn.setBackground(Ui.pillRipple(this, 0x00000000, 0x33D6AC88));
         int cp = Ui.dp(this, 8);
         copyBtn.setPadding(cp, cp, cp, cp);
         copyBtn.setOnClickListener(new View.OnClickListener() {
@@ -878,7 +900,7 @@ public class Main extends Activity {
         jumpLogBtn.setImageDrawable(M3Icons.chevron(Ui.ACCENT, Ui.dp(this, 18)));
         jumpLogBtn.setScaleType(ImageView.ScaleType.FIT_CENTER);
         jumpLogBtn.setRotation(90f);
-        jumpLogBtn.setBackground(Ui.pillRipple(this, Ui.PRIMARY, 0x40FFFFFF));
+        jumpLogBtn.setBackground(Ui.ripple(this, Ui.PRIMARY, 16f, 0x33D6AC88));
         int jp = Ui.dp(this, 10);
         jumpLogBtn.setPadding(jp, jp, jp, jp);
         jumpLogBtn.setElevation(Ui.dp(this, 3));
@@ -958,7 +980,7 @@ public class Main extends Activity {
 
         // ---- file card
         LinearLayout fileCard = Ui.col(this);
-        fileCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        fileCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         fileCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         fileCard.addView(Ui.section(this, "Theme file (.itz)"));
 
@@ -992,7 +1014,7 @@ public class Main extends Activity {
 
         // ---- status card
         LinearLayout statusCard = Ui.col(this);
-        statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 12f, Ui.BORDER, 1.2f));
+        statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 18f, Ui.BORDER, 1.2f));
         statusCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 12), Ui.dp(this, 14), Ui.dp(this, 12));
         themeStatusText = Ui.text(this, "Select a .itz file and tap Install", 13f, Ui.MUTED);
         statusCard.addView(themeStatusText);
@@ -1030,7 +1052,7 @@ public class Main extends Activity {
         LinearLayout row = Ui.row(this);
         row.setGravity(Gravity.CENTER);
         // Expressive full capsule pill button (radius = height / 2) with micro-elevation
-        row.setBackground(Ui.pillRipple(this, Ui.PRIMARY, 0x40FFFFFF));
+        row.setBackground(Ui.ripple(this, Ui.PRIMARY, 16f, 0x33D6AC88));
         row.setPadding(Ui.dp(this, 18), Ui.dp(this, 13), Ui.dp(this, 18), Ui.dp(this, 13));
         row.setElevation(Ui.dp(this, 2));
 
@@ -1057,7 +1079,7 @@ public class Main extends Activity {
     private View textButton(String label, View.OnClickListener onClick) {
         LinearLayout row = Ui.row(this);
         row.setGravity(Gravity.CENTER);
-        row.setBackground(Ui.pillRipple(this, Ui.PRIMARY, 0x40FFFFFF));
+        row.setBackground(Ui.ripple(this, Ui.PRIMARY, 16f, 0x33D6AC88));
         row.setPadding(Ui.dp(this, 14), Ui.dp(this, 13), Ui.dp(this, 14), Ui.dp(this, 13));
         row.setElevation(Ui.dp(this, 2));
         TextView lb = Ui.label(this, label, 14f, Ui.TEXT);
@@ -1076,7 +1098,7 @@ public class Main extends Activity {
     private View hintCard() {
         LinearLayout card = Ui.row(this);
         // M3 Expressive Container: 22dp corner radius with glowing outline
-        card.setBackground(Ui.shape(this, 0x1A6CE5A8, 22f, Ui.ACCENT, 1.2f));
+        card.setBackground(Ui.shape(this, 0x22D6AC88, 22f, Ui.ACCENT, 1.2f));
         card.setPadding(Ui.dp(this, 16), Ui.dp(this, 14), Ui.dp(this, 16), Ui.dp(this, 14));
 
         ImageView arrow = new ImageView(this);
@@ -1550,7 +1572,7 @@ public class Main extends Activity {
 
         // ---- preview card
         LinearLayout previewCard = Ui.col(this);
-        previewCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        previewCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         previewCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         previewCard.addView(Ui.section(this, "Preview"));
         iconsPreviewRow = new LinearLayout(this);
@@ -1564,7 +1586,7 @@ public class Main extends Activity {
 
         // ---- icon source: system icons or an imported icon pack
         LinearLayout srcCard = Ui.col(this);
-        srcCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        srcCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         srcCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         srcCard.addView(Ui.section(this, "Icon source"));
 
@@ -1592,7 +1614,7 @@ public class Main extends Activity {
 
         // ---- rendering mode. The default is a faithful, full-color pack.
         LinearLayout modeCard = Ui.col(this);
-        modeCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        modeCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         modeCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         modeCard.addView(Ui.section(this, "Icon appearance"));
         LinearLayout modeRow = Ui.row(this);
@@ -1637,7 +1659,7 @@ public class Main extends Activity {
 
         // ---- color picker & Monet mode
         LinearLayout colorCard = Ui.col(this);
-        colorCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        colorCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         colorCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         colorCard.addView(Ui.section(this, "Tint color"));
 
@@ -1733,7 +1755,7 @@ public class Main extends Activity {
 
         // ---- fine tuning sliders
         LinearLayout tuneCard = Ui.col(this);
-        tuneCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        tuneCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         tuneCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         tuneCard.addView(Ui.section(this, "Fine tuning"));
         sbDesat = addSlider(tuneCard, "Desaturation", iconsDesat, new IntSetter() {
@@ -1758,7 +1780,7 @@ public class Main extends Activity {
 
         // ---- IconPack Studio style: background layer + foreground icon
         LinearLayout styleCard = Ui.col(this);
-        styleCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        styleCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         styleCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         styleCard.addView(Ui.section(this, "Style: background + icon"));
 
@@ -2007,7 +2029,7 @@ public class Main extends Activity {
         // overrides. A backup made today is the CURRENT state, not a factory
         // image if the phone has already been customized.
         LinearLayout recoveryCard = Ui.col(this);
-        recoveryCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        recoveryCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         recoveryCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14),
                 Ui.dp(this, 14), Ui.dp(this, 14));
         recoveryCard.addView(Ui.section(this, "Backup & recovery"));
@@ -2044,7 +2066,7 @@ public class Main extends Activity {
 
         // ---- status card
         LinearLayout statusCard = Ui.col(this);
-        statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 12f, Ui.BORDER, 1.2f));
+        statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 18f, Ui.BORDER, 1.2f));
         statusCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 12), Ui.dp(this, 14), Ui.dp(this, 12));
         iconsStatusText = Ui.text(this, "Choose a pack, preview it and tap Apply icons", 13f, Ui.MUTED);
         statusCard.addView(iconsStatusText);
@@ -2961,7 +2983,7 @@ public class Main extends Activity {
 
         // Expressive Card Container for settings options
         LinearLayout card = Ui.col(this);
-        card.setBackground(Ui.shape(this, Ui.SURFACE, 24f, Ui.BORDER_SOFT, 1.2f));
+        card.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1.2f));
         card.setPadding(Ui.dp(this, 16), Ui.dp(this, 8), Ui.dp(this, 16), Ui.dp(this, 8));
 
         card.addView(settingsSwitchRow());
@@ -3043,7 +3065,7 @@ public class Main extends Activity {
 
     private View settingsNavRow(String label, View.OnClickListener onClick) {
         LinearLayout row = settingsRowBase();
-        row.setBackground(Ui.ripple(this, 0x00000000, 12f, 0x3382E5A6));
+        row.setBackground(Ui.ripple(this, 0x00000000, 12f, 0x33D6AC88));
         row.setPadding(Ui.dp(this, 10), Ui.dp(this, 15), Ui.dp(this, 10), Ui.dp(this, 15));
         row.addView(Ui.text(this, label, 14f, Ui.TEXT),
                 new LinearLayout.LayoutParams(0, -2, 1f));
@@ -3106,14 +3128,47 @@ public class Main extends Activity {
         scroll.addView(root, new FrameLayout.LayoutParams(-1, -2));
 
         root.addView(pageTitle(Ui.label(this, "Customization", 26f, Ui.TEXT),
-                "Themes, icons, and backgrounds"));
+                "Make OriginOS yours, without replacing your launcher"));
+
+        LinearLayout banner = Ui.col(this);
+        banner.setPadding(Ui.dp(this, 19), Ui.dp(this, 19),
+                Ui.dp(this, 19), Ui.dp(this, 19));
+        banner.setBackground(Ui.hero(this));
+        LinearLayout brandRow = Ui.row(this);
+        FrameLayout brandTile = new FrameLayout(this);
+        brandTile.setBackground(Ui.shape(this, Ui.INK, 15f, Ui.BORDER_SOFT, 1f));
+        brandTile.addView(Ui.brand(this, 42),
+                new FrameLayout.LayoutParams(Ui.dp(this, 42), Ui.dp(this, 42), Gravity.CENTER));
+        brandRow.addView(brandTile, new LinearLayout.LayoutParams(
+                Ui.dp(this, 59), Ui.dp(this, 59)));
+        LinearLayout tag = Ui.col(this);
+        TextView cap = Ui.section(this, "VIVIX  /  CREATIVE TOOLS");
+        cap.setTextColor(Ui.ACCENT);
+        tag.addView(cap);
+        tag.addView(Ui.label(this, "Your device. Your style.", 18f, Ui.TEXT));
+        LinearLayout.LayoutParams tagLp = new LinearLayout.LayoutParams(0, -2, 1f);
+        tagLp.leftMargin = Ui.dp(this, 12);
+        brandRow.addView(tag, tagLp);
+        banner.addView(brandRow);
+        TextView description = Ui.text(this,
+                "Icon packs, themes, type and system controls in one calm workspace.",
+                12.5f, Ui.MUTED);
+        LinearLayout.LayoutParams dLp = new LinearLayout.LayoutParams(-1, -2);
+        dLp.topMargin = Ui.dp(this, 12);
+        banner.addView(description, dLp);
+        LinearLayout.LayoutParams bannerLp = new LinearLayout.LayoutParams(-1, -2);
+        bannerLp.bottomMargin = Ui.dp(this, 22);
+        root.addView(banner, bannerLp);
+        TextView tools = Ui.section(this, "YOUR TOOLS");
+        tools.setTextColor(Ui.ACCENT);
+        root.addView(tools);
 
         root.addView(customBlock(M3Icons.palette(Ui.ACCENT, Ui.dp(this, 24)),
-                "Theme", "Install .itz", ThemeActivity.class));
+                "Themes", "Apply OriginOS theme files", ThemeActivity.class));
         root.addView(customBlock(M3Icons.tune(Ui.ACCENT, Ui.dp(this, 24)),
                 "System Settings", "Accent recoloring and Monet", SettingsThemeActivity.class));
         root.addView(customBlock(M3Icons.grid(Ui.ACCENT, Ui.dp(this, 24)),
-                "Icons", "Recoloring and packs", IconsActivity.class));
+                "Icon packs", "Original artwork, shapes and recovery", IconsActivity.class));
         root.addView(customBlock(M3Icons.font(Ui.ACCENT, Ui.dp(this, 24)),
                 "Fonts", "System fonts", FontActivity.class));
         root.addView(customBlock(M3Icons.shield(Ui.ACCENT, Ui.dp(this, 24)),
@@ -3127,13 +3182,13 @@ public class Main extends Activity {
         LinearLayout card = Ui.row(this);
         card.setGravity(Gravity.CENTER_VERTICAL);
         // Expressive Card Container: 24dp radius, subtle micro-contrast border
-        card.setBackground(Ui.ripple(this, Ui.SURFACE, 24f, 0x406CE5A8));
+        card.setBackground(Ui.ripple(this, Ui.SURFACE, 20f, 0x33D6AC88));
         card.setPadding(Ui.dp(this, 16), Ui.dp(this, 15), Ui.dp(this, 16), Ui.dp(this, 15));
         card.setElevation(Ui.dp(this, 2));
 
         FrameLayout tile = new FrameLayout(this);
         // Expressive pill / capsule shape for icon tile
-        tile.setBackground(Ui.pillShape(this, Ui.PRIMARY, 0, 0));
+        tile.setBackground(Ui.shape(this, Ui.PRIMARY, 15f, Ui.BORDER_SOFT, 1f));
         ImageView ic = new ImageView(this);
         ic.setImageDrawable(icon);
         ic.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -3193,7 +3248,7 @@ public class Main extends Activity {
 
         // ---- file card
         LinearLayout fileCard = Ui.col(this);
-        fileCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        fileCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         fileCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         fileCard.addView(Ui.section(this, "Font file (.ttf)"));
 
@@ -3227,7 +3282,7 @@ public class Main extends Activity {
 
         // ---- status card
         LinearLayout statusCard = Ui.col(this);
-        statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 12f, Ui.BORDER, 1.2f));
+        statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 18f, Ui.BORDER, 1.2f));
         statusCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 12), Ui.dp(this, 14), Ui.dp(this, 12));
         fontThemeStatusText = Ui.text(this, "Select a .ttf file and tap Install", 13f, Ui.MUTED);
         statusCard.addView(fontThemeStatusText);
@@ -3271,7 +3326,7 @@ public class Main extends Activity {
 
         // ---- preview card
         LinearLayout prevCard = Ui.col(this);
-        prevCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        prevCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         prevCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         prevCard.addView(Ui.section(this, "Settings accent preview"));
 
@@ -3306,7 +3361,7 @@ public class Main extends Activity {
 
         // ---- mode card: Monet (Wallpaper) vs Manual
         LinearLayout modeCard = Ui.col(this);
-        modeCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        modeCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1f));
         modeCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14), Ui.dp(this, 14));
         modeCard.addView(Ui.section(this, "Color mode"));
 
@@ -3412,7 +3467,7 @@ public class Main extends Activity {
 
         // ---- status card
         LinearLayout statusCard = Ui.col(this);
-        statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 12f, Ui.BORDER, 1.2f));
+        statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 18f, Ui.BORDER, 1.2f));
         statusCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 12), Ui.dp(this, 14), Ui.dp(this, 12));
         stStatusText = Ui.text(this, "Choose a color mode and tap Recolor Settings", 13f, Ui.MUTED);
         statusCard.addView(stStatusText);
@@ -3884,7 +3939,7 @@ public class Main extends Activity {
 
         // ---- unkillable background: pick any installed app, toggle protection & freeze
         LinearLayout keepCard = Ui.col(this);
-        keepCard.setBackground(Ui.shape(this, Ui.SURFACE, 24f, Ui.BORDER_SOFT, 1.2f));
+        keepCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1.2f));
         keepCard.setPadding(Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16));
         keepCard.addView(Ui.section(this, "Prevent apps from being killed"));
 
@@ -3984,7 +4039,7 @@ public class Main extends Activity {
 
         // ---- adb bridge card
         LinearLayout bridgeCard = Ui.col(this);
-        bridgeCard.setBackground(Ui.shape(this, Ui.SURFACE, 24f, Ui.BORDER_SOFT, 1.2f));
+        bridgeCard.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1.2f));
         bridgeCard.setPadding(Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16));
         bridgeCard.addView(Ui.section(this, "ADB bridge"));
 
@@ -4216,7 +4271,7 @@ public class Main extends Activity {
         LinearLayout row = Ui.row(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackground(Ui.ripple(this, selected ? Ui.PRIMARY : 0x00000000,
-                12f, 0x4082E5A6));
+                12f, 0x33D6AC88));
         int p = Ui.dp(this, 8);
         row.setPadding(p, p, p, p);
 
