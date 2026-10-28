@@ -61,6 +61,22 @@ final class IconRecovery {
                 + "echo END_RECOVERY_STATUS;";
     }
 
+    /** Export the most recent verified snapshot into a portable ZIP-like tarball. */
+    static String exportLatest() {
+        return guard()
+                + "RB=" + RECOVERY + ";"
+                + "TARGET=$(for d in \"$RB\"/snapshot-*; do "
+                + "[ -f \"$d/.complete\" ] && echo \"$d\"; done | sort | tail -n 1);"
+                + "[ -n \"$TARGET\" ] || { echo EXPORT_FAILED=NO_BACKUP; exit 1; };"
+                + "OUT=/sdcard/Download/Vivix;"
+                + "mkdir -p \"$OUT\" || { echo EXPORT_FAILED=DOWNLOADS; exit 1; };"
+                + "ID=${TARGET##*/};"
+                + "tar -czf \"$OUT/$ID.tar.gz\" -C \"$RB\" \"$ID\""
+                + " || { echo EXPORT_FAILED=ARCHIVE; exit 1; };"
+                + "[ -s \"$OUT/$ID.tar.gz\" ] || { echo EXPORT_FAILED=EMPTY; exit 1; };"
+                + "echo BACKUP_EXPORTED=$OUT/$ID.tar.gz;";
+    }
+
     /** Save the current state, then move overrides aside, never delete them. */
     static String disableOverrides() {
         StringBuilder s = new StringBuilder(guard());
