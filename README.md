@@ -18,6 +18,7 @@ Download the APK from the workflow run's Artifacts section.
 Vivix now creates a **mandatory backup before applying any new icon pack**. If that backup cannot be completed and checked, the icon installation stops before changing active theme resources. In **Customization → Icons → Backup & recovery**, you can:
 
 - **Back up current icon theme:** save the current Vivo icon/mask directories.
+- **Export latest backup to Downloads:** create a portable `.tar.gz` in `Download/Vivix/`.
 - **Restore saved icon theme:** restore either the latest or the first saved snapshot, after backing up the current state again.
 - **Disable Vivix icon overrides:** move the active custom-icon and launcher-mask directories aside without deleting their contents, allowing OriginOS to try its default theme icons.
 - **View saved backups:** inspect saved snapshot identifiers.
