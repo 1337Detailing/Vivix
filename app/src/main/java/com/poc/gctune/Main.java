@@ -2487,8 +2487,15 @@ public class Main extends Activity {
                 success = output.contains("RESTORED_SNAPSHOT=");
             } else if ("status".equals(action)) success = output.contains("END_RECOVERY_STATUS");
         }
+        boolean settingsRestored = true;
+        if (success && ("latest".equals(action) || "first".equals(action))) {
+            settingsRestored = restoreSavedIconSettings(output);
+        }
         if (success) {
-            iconsStatus("Recovery " + action + " completed. Check the report. A restart may help.", Ui.ACCENT);
+            iconsStatus(settingsRestored
+                    ? "Recovery " + action + " completed. Restart your phone if needed."
+                    : "Theme files restored, but saved icon settings could not be restored. Check permissions.",
+                    settingsRestored ? Ui.ACCENT : Ui.ERROR);
         } else {
             iconsStatus("Recovery " + action + " did NOT complete. Do not assume the theme was restored.", Ui.ERROR);
         }
@@ -2497,6 +2504,39 @@ public class Main extends Activity {
                 .setTitle(success ? "Vivix recovery report" : "Vivix recovery error")
                 .setMessage(output.length() == 0 ? "No response from Game Cube." : output)
                 .setPositiveButton("OK", null).show();
+    }
+
+    private static String recoveryValue(String output, String key) {
+        String prefix = key + "=";
+        int start = output.indexOf(prefix);
+        if (start < 0) return null;
+        start += prefix.length();
+        int end = output.indexOf('\n', start);
+        return output.substring(start, end < 0 ? output.length() : end).trim();
+    }
+
+    /** Restore only the exact icon-style settings captured with the snapshot. */
+    private boolean restoreSavedIconSettings(String output) {
+        if (checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) return false;
+        String sys = recoveryValue(output, "SAVED_ICON_SYSTEM");
+        String global = recoveryValue(output, "SAVED_ICON_GLOBAL");
+        String corners = recoveryValue(output, "SAVED_ICON_CORNERS");
+        if (sys == null || global == null || corners == null) return false;
+        boolean ok = true;
+        try {
+            ok &= Settings.System.putString(getContentResolver(), "theme_icons_style_explore",
+                    "null".equals(sys) ? null : sys);
+        } catch (Throwable t) { ok = false; }
+        try {
+            ok &= Settings.Global.putString(getContentResolver(), "theme_icons_style_explore",
+                    "null".equals(global) ? null : global);
+        } catch (Throwable t) { ok = false; }
+        try {
+            ok &= Settings.System.putString(getContentResolver(), "icon_corner_value",
+                    "null".equals(corners) ? null : corners);
+        } catch (Throwable t) { ok = false; }
+        return ok;
     }
 
     private void runIconsApply() {
