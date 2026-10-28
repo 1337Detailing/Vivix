@@ -50,6 +50,23 @@ public class PrefsActivity extends Activity {
         scroll.addView(root, new android.widget.FrameLayout.LayoutParams(-1, -2));
 
         root.addView(header());
+        LinearLayout intro = Ui.col(this);
+        intro.setBackground(Ui.hero(this));
+        intro.setPadding(Ui.dp(this, 17), Ui.dp(this, 17), Ui.dp(this, 17), Ui.dp(this, 17));
+        LinearLayout introRow = Ui.row(this);
+        introRow.addView(Ui.brand(this, 44), new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+        LinearLayout introText = Ui.col(this);
+        TextView introCap = Ui.section(this, "VIVIX  /  PREFERENCES");
+        introCap.setTextColor(Ui.ACCENT);
+        introText.addView(introCap);
+        introText.addView(Ui.label(this, "Device connection", 20f, Ui.TEXT));
+        LinearLayout.LayoutParams colLp = new LinearLayout.LayoutParams(0, -2, 1f);
+        colLp.leftMargin = Ui.dp(this, 12);
+        introRow.addView(introText, colLp);
+        intro.addView(introRow);
+        LinearLayout.LayoutParams introLp = new LinearLayout.LayoutParams(-1, -2);
+        introLp.bottomMargin = Ui.dp(this, 16);
+        root.addView(intro, introLp);
         root.addView(switchRow());
         root.addView(daemonSwitchRow());
         root.addView(timeoutRow());
@@ -70,7 +87,7 @@ public class PrefsActivity extends Activity {
             }
         }));
 
-        TextView about = Ui.text(this, "GC Tune 1.0 · Game Cube channel", 11f, Ui.MUTED);
+        TextView about = Ui.text(this, "VIVIX  ·  MIDNIGHT EDITION", 11f, Ui.MUTED);
         about.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams aboutLp = new LinearLayout.LayoutParams(-2, -2);
         aboutLp.gravity = Gravity.CENTER_HORIZONTAL;
@@ -116,7 +133,7 @@ public class PrefsActivity extends Activity {
                 new int[]{Ui.ACCENT, Ui.MUTED}));
         sw.setTrackTintList(new android.content.res.ColorStateList(
                 new int[][]{{android.R.attr.state_checked}, new int[]{}},
-                new int[]{Ui.PRIMARY, 0x553D7D56}));
+                new int[]{Ui.PRIMARY, 0x554A5062}));
         sw.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(android.widget.CompoundButton btn, boolean checked) {
@@ -140,7 +157,7 @@ public class PrefsActivity extends Activity {
                 new int[]{Ui.ACCENT, Ui.MUTED}));
         sw.setTrackTintList(new android.content.res.ColorStateList(
                 new int[][]{{android.R.attr.state_checked}, new int[]{}},
-                new int[]{Ui.PRIMARY, 0x553D7D56}));
+                new int[]{Ui.PRIMARY, 0x554A5062}));
         sw.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(android.widget.CompoundButton btn, boolean checked) {
@@ -194,8 +211,12 @@ public class PrefsActivity extends Activity {
 
     private LinearLayout rowBase() {
         LinearLayout row = Ui.row(this);
-        row.setPadding(0, Ui.dp(this, 15), 0, Ui.dp(this, 15));
-        row.setMinimumHeight(Ui.dp(this, 30));
+        row.setPadding(Ui.dp(this, 16), Ui.dp(this, 14), Ui.dp(this, 16), Ui.dp(this, 14));
+        row.setBackground(Ui.shape(this, Ui.SURFACE, 17f, Ui.BORDER_SOFT, 1f));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.bottomMargin = Ui.dp(this, 10);
+        row.setLayoutParams(lp);
+        row.setMinimumHeight(Ui.dp(this, 56));
         return row;
     }
 
