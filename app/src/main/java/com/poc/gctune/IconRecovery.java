@@ -107,6 +107,12 @@ final class IconRecovery {
         s.append("rmdir \"$NEXT\" 2>/dev/null;");
         s.append("restorecon -RF \"$TD/icons\" \"$TD/launcher\" 2>/dev/null;");
         s.append("echo RESTORED_SNAPSHOT=${TARGET##*/};");
+        // uid1000 cannot reliably write Settings.System/Global on every
+        // OriginOS ROM (AppOps may reject it). Report saved values so the
+        // Android app can restore them using its explicit ADB grant.
+        s.append("echo SAVED_ICON_SYSTEM=$(cat \"$TARGET/style-system.txt\" 2>/dev/null);");
+        s.append("echo SAVED_ICON_GLOBAL=$(cat \"$TARGET/style-global.txt\" 2>/dev/null);");
+        s.append("echo SAVED_ICON_CORNERS=$(cat \"$TARGET/corners.txt\" 2>/dev/null);");
         s.append(restart());
         return s.toString();
     }
