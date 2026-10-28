@@ -279,6 +279,8 @@ public class Main extends Activity {
     private boolean styleToggleOk = true;
     private boolean iconsRun = false;
     private boolean iconsDiagnosticRun = false;
+    private boolean iconsRecoveryRun = false;
+    private String iconsRecoveryAction = "";
     private List<String> iconsPackages = new ArrayList<>();
     private List<Drawable> iconsOriginals = new ArrayList<>();
     private List<Drawable> iconsTinted = new ArrayList<>();
@@ -2001,6 +2003,41 @@ public class Main extends Activity {
         diagnosticLp.bottomMargin = Ui.dp(this, 14);
         root.addView(diagnostics, diagnosticLp);
 
+        // Persistent snapshots and a reversible way to disable custom icon
+        // overrides. A backup made today is the CURRENT state, not a factory
+        // image if the phone has already been customized.
+        LinearLayout recoveryCard = Ui.col(this);
+        recoveryCard.setBackground(Ui.shape(this, Ui.SURFACE, 12f, Ui.BORDER_SOFT, 1f));
+        recoveryCard.setPadding(Ui.dp(this, 14), Ui.dp(this, 14),
+                Ui.dp(this, 14), Ui.dp(this, 14));
+        recoveryCard.addView(Ui.section(this, "Backup & recovery"));
+        recoveryCard.addView(Ui.text(this,
+                "Vivix saves both icon folders automatically BEFORE every new installation. " +
+                "Snapshots survive Vivix reinstalls, but older damage is not a factory backup.",
+                12f, Ui.MUTED));
+
+        View backupBtn = textButton("Back up current icon theme", new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                runIconsRecovery("backup");
+            }
+        });
+        recoveryCard.addView(backupBtn);
+        View restoreBtn = textButton("Restore saved icon theme", new View.OnClickListener() {
+            @Override public void onClick(View v) { showRestoreIconsDialog(); }
+        });
+        recoveryCard.addView(restoreBtn);
+        View disableBtn = textButton("Disable Vivix icon overrides", new View.OnClickListener() {
+            @Override public void onClick(View v) { showDisableIconsDialog(); }
+        });
+        recoveryCard.addView(disableBtn);
+        View statusBtn = textButton("View saved backups", new View.OnClickListener() {
+            @Override public void onClick(View v) { runIconsRecovery("status"); }
+        });
+        recoveryCard.addView(statusBtn);
+        LinearLayout.LayoutParams recoveryLp = new LinearLayout.LayoutParams(-1, -2);
+        recoveryLp.bottomMargin = Ui.dp(this, 14);
+        root.addView(recoveryCard, recoveryLp);
+
         // ---- status card
         LinearLayout statusCard = Ui.col(this);
         statusCard.setBackground(Ui.shape(this, Ui.INPUT_BG, 12f, Ui.BORDER, 1.2f));
@@ -2360,6 +2397,108 @@ public class Main extends Activity {
                 .show();
     }
 
+    private void showRestoreIconsDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Restore a saved icon theme")
+                .setMessage("This only restores Vivix icon theme files. Backups made AFTER " +
+                        "your icons became square may also contain the same problem. " +
+                        "Your home screen layout is not cleared. The current theme " +
+                        "will be backed up again before restoring.")
+                .setPositiveButton("Latest backup", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) {
+                        confirmIconsRecovery("latest", "Restore latest saved icon theme?");
+                    }
+                })
+                .setNeutralButton("First backup", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) {
+                        confirmIconsRecovery("first", "Restore earliest captured icon theme?");
+                    }
+                })
+                .setNegativeButton("Cancel", null).show();
+    }
+
+    private void showDisableIconsDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Disable Vivix icon overrides?")
+                .setMessage("This moves the active icon and launcher-mask theme folders " +
+                        "into a dated, retained backup. Vivo will then try its own " +
+                        "theme resources. Your icon pack may disappear. No launcher " +
+                        "data, widgets or system APKs will be deleted. This is a " +
+                        "reversible theme reset, NOT a factory reset.")
+                .setPositiveButton("Disable overrides", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) {
+                        runIconsRecovery("disable");
+                    }
+                })
+                .setNegativeButton("Cancel", null).show();
+    }
+
+    private void confirmIconsRecovery(final String action, String title) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage("The current icon files will be backed up again. " +
+                        "Vivix will then restore the chosen snapshot and restart " +
+                        "the launcher without clearing any launcher data.")
+                .setPositiveButton("Restore", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) {
+                        runIconsRecovery(action);
+                    }
+                })
+                .setNegativeButton("Cancel", null).show();
+    }
+
+    private void runIconsRecovery(String action) {
+        if (busy || iconsRun) {
+            iconsStatus("Another command is running; recovery was not started.", Ui.ERROR);
+            return;
+        }
+        String script;
+        switch (action) {
+            case "backup": script = IconRecovery.manualBackup(); break;
+            case "latest": script = IconRecovery.restore(false); break;
+            case "first": script = IconRecovery.restore(true); break;
+            case "disable": script = IconRecovery.disableOverrides(); break;
+            case "status": script = IconRecovery.status(); break;
+            default: return;
+        }
+        iconsRecoveryAction = action;
+        iconsRecoveryRun = true;
+        iconsStatus("Recovery: " + action + " (Game Cube system channel)…", Ui.ACCENT);
+        if (!apply(script, true)) {
+            iconsRecoveryRun = false;
+            iconsRecoveryAction = "";
+            iconsStatus("Recovery was not started. Add Vivix to Game Cube and try again.", Ui.ERROR);
+        }
+    }
+
+    private void iconsRecoveryResult(boolean ok, Entry e) {
+        String action = iconsRecoveryAction;
+        iconsRecoveryAction = "";
+        iconsRecoveryRun = false;
+        String output = e != null && e.out != null ? e.out : "";
+        boolean success = ok && e != null && e.rc == 0
+                && !output.contains("RECOVERY_FAILED")
+                && !output.contains("BACKUP_FAILED")
+                && !output.contains("RECOVERY_BUSY");
+        if (success) {
+            if ("backup".equals(action)) success = output.contains("RECOVERY_BACKUP_OK");
+            else if ("disable".equals(action)) success = output.contains("OVERRIDES_DISABLED=");
+            else if ("latest".equals(action) || "first".equals(action)) {
+                success = output.contains("RESTORED_SNAPSHOT=");
+            } else if ("status".equals(action)) success = output.contains("END_RECOVERY_STATUS");
+        }
+        if (success) {
+            iconsStatus("Recovery " + action + " completed. Check the report. A restart may help.", Ui.ACCENT);
+        } else {
+            iconsStatus("Recovery " + action + " did NOT complete. Do not assume the theme was restored.", Ui.ERROR);
+        }
+        if (output.length() > 2000) output = output.substring(0, 2000) + "…";
+        new AlertDialog.Builder(this)
+                .setTitle(success ? "Vivix recovery report" : "Vivix recovery error")
+                .setMessage(output.length() == 0 ? "No response from Game Cube." : output)
+                .setPositiveButton("OK", null).show();
+    }
+
     private void runIconsApply() {
         if (busy) {
             toast("Wait for the current command");
@@ -2608,6 +2747,9 @@ public class Main extends Activity {
         // Explicitly unlock on the normal path as well as in the EXIT trap.
         // Some Game Cube shell execution paths may not run an EXIT trap.
         sb.append("trap 'rmdir \"$LOCK\" 2>/dev/null' EXIT;");
+        // Mandatory, durable pre-change backup. If it fails the command
+        // exits before *any* icon/theme asset is removed or replaced.
+        sb.append(IconRecovery.snapshot());
         // icons are rendered by the app into $SRC before this command runs.
         sb.append("echo SRC_ICONS=$(ls \"$SRC\" 2>/dev/null | wc -l);");
         // 1) stage the new icons first so nothing is half-swapped if we bail out
@@ -2705,6 +2847,8 @@ public class Main extends Activity {
         pendingOldStyle = null;
         if (!ok) {
             iconsStatus("No Game Cube response. Installation may still be running. Do not retry immediately; inspect the lock status first.", Ui.ERROR);
+        } else if (out.contains("BACKUP_FAILED")) {
+            iconsStatus("Automatic backup failed: installation stopped BEFORE changing the theme. See Shell.", Ui.ERROR);
         } else if (out.contains("NO_ICONS")) {
             iconsStatus("No recolored icons — try again", Ui.ERROR);
         } else if (out.contains("LAUNCHER_SOURCE_MISSING")) {
@@ -4629,6 +4773,11 @@ public class Main extends Activity {
         }
         busy = false;
         if (iconsDiagnosticRun) { iconsDiagnosticRun = false; iconsStatus("Diagnostic cancelled", Ui.MUTED); }
+        if (iconsRecoveryRun) {
+            iconsRecoveryRun = false;
+            iconsRecoveryAction = "";
+            iconsStatus("Recovery interrupted. Inspect the backups before retrying.", Ui.ERROR);
+        }
         resolveBridge(false, e, "cancelled");
         if (themeRun) {
             themeRun = false;
@@ -4665,6 +4814,7 @@ public class Main extends Activity {
         if (themeRun) themeResult(ok, e);
         if (iconsRun) iconsResult(ok, e);
         if (iconsDiagnosticRun) iconsDiagnosticsResult(ok, e);
+        if (iconsRecoveryRun) iconsRecoveryResult(ok, e);
         if (fontThemeRun) fontResult(ok, e);
         if (stRun) settingsThemeResult(ok, e);
         if (miscRun) miscResult(ok, e);
