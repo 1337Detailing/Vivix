@@ -2022,6 +2022,10 @@ public class Main extends Activity {
             }
         });
         recoveryCard.addView(backupBtn);
+        View exportBtn = textButton("Export latest backup to Downloads", new View.OnClickListener() {
+            @Override public void onClick(View v) { runIconsRecovery("export"); }
+        });
+        recoveryCard.addView(exportBtn);
         View restoreBtn = textButton("Restore saved icon theme", new View.OnClickListener() {
             @Override public void onClick(View v) { showRestoreIconsDialog(); }
         });
@@ -2455,6 +2459,7 @@ public class Main extends Activity {
         String script;
         switch (action) {
             case "backup": script = IconRecovery.manualBackup(); break;
+            case "export": script = IconRecovery.exportLatest(); break;
             case "latest": script = IconRecovery.restore(false); break;
             case "first": script = IconRecovery.restore(true); break;
             case "disable": script = IconRecovery.disableOverrides(); break;
@@ -2479,9 +2484,11 @@ public class Main extends Activity {
         boolean success = ok && e != null && e.rc == 0
                 && !output.contains("RECOVERY_FAILED")
                 && !output.contains("BACKUP_FAILED")
+                && !output.contains("EXPORT_FAILED")
                 && !output.contains("RECOVERY_BUSY");
         if (success) {
             if ("backup".equals(action)) success = output.contains("RECOVERY_BACKUP_OK");
+            else if ("export".equals(action)) success = output.contains("BACKUP_EXPORTED=");
             else if ("disable".equals(action)) success = output.contains("OVERRIDES_DISABLED=");
             else if ("latest".equals(action) || "first".equals(action)) {
                 success = output.contains("RESTORED_SNAPSHOT=");
