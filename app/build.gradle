@@ -10,8 +10,8 @@ android {
         applicationId 'com.poc.gctune'
         minSdk 26
         targetSdk 30
-        versionCode 15
-        versionName '1.3.0-vivix-recovery'
+        versionCode 16
+        versionName '2.0.0-vivix-midnight'
     }
 
     compileOptions {

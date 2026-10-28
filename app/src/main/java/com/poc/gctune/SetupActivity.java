@@ -119,13 +119,15 @@ public class SetupActivity extends Activity {
         root.addView(new View(this), new LinearLayout.LayoutParams(0, 0, 1f));
 
         ImageView mark = new ImageView(this);
-        mark.setImageDrawable(M3Icons.terminal(Ui.ACCENT, Ui.dp(this, 44)));
+        mark.setImageResource(R.drawable.brand_mark);
         mark.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        LinearLayout.LayoutParams markLp = new LinearLayout.LayoutParams(-2, -2);
+        mark.setBackground(Ui.shape(this, Ui.SURFACE, 24f, Ui.BORDER_SOFT, 1f));
+        mark.setPadding(Ui.dp(this, 20), Ui.dp(this, 20), Ui.dp(this, 20), Ui.dp(this, 20));
+        LinearLayout.LayoutParams markLp = new LinearLayout.LayoutParams(Ui.dp(this, 116), Ui.dp(this, 116));
         markLp.gravity = Gravity.CENTER_HORIZONTAL;
         root.addView(mark, markLp);
 
-        TextView title = Ui.label(this, "Vivix", 28f, Ui.TEXT);
+        TextView title = Ui.label(this, "Vivix", 35f, Ui.TEXT);
         title.setLetterSpacing(-0.01f);
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(-2, -2);
@@ -151,7 +153,8 @@ public class SetupActivity extends Activity {
         root.addView(statusRow, statusLp);
 
         TextView path = Ui.text(this,
-                "Ultra Game Mode → Supported Games → Other → Vivix", 11.5f, Ui.MUTED);
+                "MIDNIGHT EDITION  ·  ORIGINOS STUDIO\n\n" +
+                "Add Vivix to Ultra Game Mode → Supported Games → Other", 12f, Ui.MUTED);
         path.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams pathLp = new LinearLayout.LayoutParams(-2, -2);
         pathLp.gravity = Gravity.CENTER_HORIZONTAL;
@@ -164,7 +167,7 @@ public class SetupActivity extends Activity {
         TextView later = Ui.label(this, "Open Vivix", 13.5f, Ui.MUTED);
         later.setGravity(Gravity.CENTER);
         later.setPadding(Ui.dp(this, 20), Ui.dp(this, 12), Ui.dp(this, 20), Ui.dp(this, 12));
-        later.setBackground(Ui.pillRipple(this, 0x00000000, 0x306CE5A8));
+        later.setBackground(Ui.ripple(this, Ui.SURFACE, 17f, 0x33D6AC88));
         LinearLayout.LayoutParams laterLp = new LinearLayout.LayoutParams(-2, -2);
         laterLp.gravity = Gravity.CENTER_HORIZONTAL;
         laterLp.topMargin = Ui.dp(this, 12);
@@ -181,15 +184,15 @@ public class SetupActivity extends Activity {
     private View settingsButton() {
         LinearLayout btn = Ui.row(this);
         btn.setGravity(Gravity.CENTER);
-        btn.setBackground(Ui.pillRipple(this, Ui.PRIMARY, 0x40FFFFFF));
+        btn.setBackground(Ui.ripple(this, Ui.SAND, 17f, 0x44FFFFFF));
         btn.setPadding(Ui.dp(this, 22), Ui.dp(this, 14), Ui.dp(this, 18), Ui.dp(this, 14));
         btn.setElevation(Ui.dp(this, 3));
 
-        TextView t = Ui.label(this, "Supported games", 14.5f, Ui.ACCENT);
+        TextView t = Ui.label(this, "Connect Game Cube", 14.5f, Ui.INK);
         btn.addView(t);
 
         ImageView chevron = new ImageView(this);
-        chevron.setImageDrawable(M3Icons.chevron(Ui.ACCENT, Ui.dp(this, 18)));
+        chevron.setImageDrawable(M3Icons.chevron(Ui.INK, Ui.dp(this, 18)));
         chevron.setScaleType(ImageView.ScaleType.FIT_CENTER);
         LinearLayout.LayoutParams chLp = new LinearLayout.LayoutParams(-2, -2);
         chLp.leftMargin = Ui.dp(this, 8);
