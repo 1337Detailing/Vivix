@@ -856,7 +856,7 @@ public class Main extends Activity {
     private View consoleCard() {
         LinearLayout card = Ui.col(this);
         // Expressive card container: 24dp radius, subtle micro-contrast border
-        card.setBackground(Ui.shape(this, Ui.SURFACE, 20f, Ui.BORDER_SOFT, 1.2f));
+        card.setBackground(Ui.shape(this, Ui.SURFACE, 22f, Ui.BORDER, 1f));
 
         // ---- header: caption + copy-to-clipboard
         LinearLayout head = Ui.row(this);
@@ -924,7 +924,7 @@ public class Main extends Activity {
             }
         });
 
-        card.addView(body, new LinearLayout.LayoutParams(-1, Ui.dp(this, 260)));
+        card.addView(body, new LinearLayout.LayoutParams(-1, Ui.dp(this, 275)));
         return card;
     }
 
@@ -1035,15 +1035,18 @@ public class Main extends Activity {
     /** Big Expressive page title with generous typography and a muted subtitle underneath. */
     private View pageTitle(TextView title, String subtitle) {
         LinearLayout col = Ui.col(this);
-        title.setTextSize(28f);
-        title.setLetterSpacing(-0.01f);
+        TextView overline = Ui.section(this, "VIVIX  /  SYSTEM STUDIO");
+        overline.setTextColor(Ui.ACCENT);
+        col.addView(overline);
+        title.setTextSize(31f);
+        title.setLetterSpacing(-0.035f);
         col.addView(title);
         TextView sub = Ui.text(this, subtitle, 12.5f, Ui.MUTED);
         LinearLayout.LayoutParams subLp = new LinearLayout.LayoutParams(-2, -2);
-        subLp.topMargin = Ui.dp(this, 4);
+        subLp.topMargin = Ui.dp(this, 6);
         col.addView(sub, subLp);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
-        lp.bottomMargin = Ui.dp(this, 20);
+        lp.bottomMargin = Ui.dp(this, 24);
         col.setLayoutParams(lp);
         return col;
     }
@@ -1052,16 +1055,17 @@ public class Main extends Activity {
         LinearLayout row = Ui.row(this);
         row.setGravity(Gravity.CENTER);
         // Expressive full capsule pill button (radius = height / 2) with micro-elevation
-        row.setBackground(Ui.ripple(this, Ui.PRIMARY, 16f, 0x33D6AC88));
+        row.setBackground(Ui.ripple(this, Ui.SAND, 17f, 0x44FFFFFF));
         row.setPadding(Ui.dp(this, 18), Ui.dp(this, 13), Ui.dp(this, 18), Ui.dp(this, 13));
         row.setElevation(Ui.dp(this, 2));
 
         ImageView ic = new ImageView(this);
+        icon.setTint(Ui.INK);
         ic.setImageDrawable(icon);
         ic.setScaleType(ImageView.ScaleType.FIT_CENTER);
         row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(this, 20), Ui.dp(this, 20)));
 
-        TextView lb = Ui.label(this, label, 14f, Ui.TEXT);
+        TextView lb = Ui.label(this, label, 14f, Ui.INK);
         LinearLayout.LayoutParams lbLp = new LinearLayout.LayoutParams(-2, -2);
         lbLp.leftMargin = Ui.dp(this, 10);
         row.addView(lb, lbLp);
@@ -1079,10 +1083,10 @@ public class Main extends Activity {
     private View textButton(String label, View.OnClickListener onClick) {
         LinearLayout row = Ui.row(this);
         row.setGravity(Gravity.CENTER);
-        row.setBackground(Ui.ripple(this, Ui.PRIMARY, 16f, 0x33D6AC88));
+        row.setBackground(Ui.ripple(this, Ui.SURFACE_HIGH, 17f, 0x33D6AC88));
         row.setPadding(Ui.dp(this, 14), Ui.dp(this, 13), Ui.dp(this, 14), Ui.dp(this, 13));
         row.setElevation(Ui.dp(this, 2));
-        TextView lb = Ui.label(this, label, 14f, Ui.TEXT);
+        TextView lb = Ui.label(this, label, 14f, Ui.ACCENT);
         lb.setGravity(Gravity.CENTER);
         row.addView(lb);
         row.setOnClickListener(new View.OnClickListener() {
@@ -3009,7 +3013,7 @@ public class Main extends Activity {
 
         root.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView about = Ui.text(this, "Vivix 1.0 · Game Cube channel", 12f, Ui.MUTED);
+        TextView about = Ui.text(this, "VIVIX 2.0  ·  MIDNIGHT EDITION", 12f, Ui.MUTED);
         about.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams aboutLp = new LinearLayout.LayoutParams(-2, -2);
         aboutLp.gravity = Gravity.CENTER_HORIZONTAL;
